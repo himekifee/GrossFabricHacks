@@ -223,7 +223,7 @@ public class UnsafeUtil extends Unsafe {
         return (Class<T>) klass;
     }
 
-    public static <T> Class<T> initialiizeClass(final Class<?> klass) {
+    public static <T> Class<T> initializeClass(final Class<?> klass) {
         ensureClassInitialized(klass);
 
         return (Class<T>) klass;
@@ -261,7 +261,7 @@ public class UnsafeUtil extends Unsafe {
 
     public static <T> Class<T> findAndDefineAndInitializeClass(final String binaryName, final ClassLoader loader) {
         try {
-            return initialiizeClass(findAndDefineClass(binaryName, loader));
+            return initializeClass(findAndDefineClass(binaryName, loader));
         } catch (final Throwable throwable) {
             throw new RuntimeException(throwable);
         }

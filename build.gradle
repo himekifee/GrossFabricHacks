@@ -1,24 +1,26 @@
 plugins {
-    id "fabric-loom" version "0.5-SNAPSHOT"
-    id "maven-publish"
-    id "maven"
+    id("java-library")
+    id("maven")
+    id("maven-publish")
+    id("fabric-loom") version("0.5-SNAPSHOT")
+    id("com.jfrog.bintray") version("1.8.5")
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
-archivesBaseName = project.archives_base_name
-version = project.mod_version
-group = project.maven_group
+project.archivesBaseName = project.baseName
+project.version = project.modVersion
+project.group = project.mavenGroup
 
 repositories {
     maven {url = "https://dl.bintray.com/user11681/maven"}
 }
 
 dependencies {
-    minecraft("com.mojang:minecraft:${project.minecraft_version}")
-    mappings("net.fabricmc:yarn:${project.yarn_mappings}:v2")
-    modImplementation("net.fabricmc:fabric-loader:${project.loader_version}")
+    minecraft("com.mojang:minecraft:${project.minecraftVersion}")
+    mappings("net.fabricmc:yarn:${project.yarnMappings}:v2")
+    modImplementation("net.fabricmc:fabric-loader:${project.loaderVersion}")
 
     compileOnly("com.google.code.findbugs:jsr305:+")
     compileOnly("org.jetbrains:annotations:+")
@@ -29,8 +31,6 @@ dependencies {
     // extraLibs files("${System.getProperty('java.home')}/../lib/tools.jar")
 
     implementation(include("net.bytebuddy:byte-buddy-agent:+"))
-//    implementation(include("net.java.dev.jna:jna:5.3.1"))
-//    implementation(include("net.java.dev.jna:jna-platform:5.3.1"))
 
     modImplementation(include("user11681:dynamicentry:0.0.2"))
     include(implementation("user11681:reflect:0.2.0"))
@@ -78,29 +78,45 @@ jar {
     }
 }
 
-// configure the maven publication
+bintray {
+    user = System.getenv("BINTRAY_USER")
+    key = System.getenv("BINTRAY_API_KEY")
+    publish = true
+    setPublications("maven")
+
+    pkg {
+        repo = "maven"
+        name = project.name
+        licenses = ["LGPL-3.0"]
+        vcsUrl = "https://github.com/user11681/grossfabrichacks.git"
+
+        version {
+            name = project.version
+            released = new Date()
+            githubRepo = "user11681/grossfabrichacks"
+            issueTrackerUrl = "https://github.com/user11681/grossfabrichacks/issues"
+        }
+    }
+}
+
 publishing {
     publications {
-        mavenJava(MavenPublication) {
-            // add all the jars that should be included when publishing to maven
+        maven(MavenPublication) {
+            groupId(project.group)
+            artifactId(project.name)
+            version(project.version)
+
             artifact(remapJar) {
                 builtBy remapJar
             }
+
             artifact(sourcesJar) {
                 builtBy remapSourcesJar
             }
         }
     }
-    // select the repositories you want to publish to
+
     repositories {
-        File gh = new File(projectDir.parentFile.parentFile, "util/Devan-Repo")
-        System.out.println(gh)
-        if (gh.exists()) {
-            maven {
-                url = gh.absolutePath
-            }
-        }
-        // uncomment to publish to the local maven
-        // mavenLocal()
+         mavenLocal()
     }
 }
