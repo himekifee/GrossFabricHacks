@@ -2,11 +2,7 @@ package net.devtech.grossfabrichacks.more_enums;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-
-import sun.reflect.ConstructorAccessor;
 
 public class EnumAdder {
 	private static final Field ENUM_CONSTANT_DIRECTORY;
@@ -32,6 +28,7 @@ public class EnumAdder {
 	 * @param values {@link net.minecraft.util.math.Direction} = field_11037, you need to find the name of the synthetic field that holds the values()
 	 * 		array
 	 */
+/*
 	public static <T extends Enum<T>> T add(String values, Class<T> type, Object... args) {
 		try {
 			Field field = type.getDeclaredField(values);
@@ -58,9 +55,11 @@ public class EnumAdder {
 		}
 	}
 
-	/**
+	*/
+/**
 	 * hahahyes brute force activated
-	 */
+	 *//*
+
 	public static <T> T brute(Class<T> type, Object... args) {
 		T instance = null;
 		for (Constructor<?> constructor : type.getDeclaredConstructors()) {
@@ -84,4 +83,5 @@ public class EnumAdder {
 		if(accessor != null) return accessor;
 		return (ConstructorAccessor) AQUIRE_CONSTRUCTOR_ACCESSOR.invoke(ctor);
 	}
+*/
 }
