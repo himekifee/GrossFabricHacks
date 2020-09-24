@@ -30,11 +30,10 @@ dependencies {
     // concern
     // extraLibs files("${System.getProperty('java.home')}/../lib/tools.jar")
 
+    modApi(include("user11681:dynamicentry:0.0.2"))
+    implementation(include("user11681:reflect:0.3.1"))
+    implementation(include("net.gudenau.lib:unsafe:1.2.14"))
     implementation(include("net.bytebuddy:byte-buddy-agent:+"))
-
-    modImplementation(include("user11681:dynamicentry:0.0.2"))
-    include(implementation("user11681:reflect:0.2.0"))
-    include(implementation("net.gudenau.lib:unsafe:1.2.14"))
 }
 
 processResources {

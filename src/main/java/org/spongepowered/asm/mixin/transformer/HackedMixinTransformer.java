@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.transformer.ext.Extensions;
+import user11681.reflect.Reflect;
 
 public class HackedMixinTransformer extends MixinTransformer {
     public static final Class<MixinTransformer> superclass = MixinTransformer.class;
@@ -68,11 +69,11 @@ public class HackedMixinTransformer extends MixinTransformer {
             // MixinTransformer instance into an instance of HackedMixinTransformer
             UnsafeUtil.unsafeCast(mixinTransformer, "org.spongepowered.asm.mixin.transformer.HackedMixinTransformer");
 
-            LOGGER.info("Unsafe cast mixin transformer success!");
+            LOGGER.info("Unsafe cast Mixin transformer success!");
 
             instance = (HackedMixinTransformer) mixinTransformer;
-            processor = (MixinProcessor) Class.forName("org.spongepowered.asm.mixin.transformer.MixinTransformer").getDeclaredField("processor").get(mixinTransformer);
-            extensions = (Extensions) superclass.getDeclaredField("extensions").get(mixinTransformer);
+            processor = Reflect.getObject(mixinTransformer, Reflect.getField(Class.forName("org.spongepowered.asm.mixin.transformer.MixinTransformer"), "processor"));
+            extensions = (Extensions) instance.getExtensions();
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
