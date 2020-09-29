@@ -21,33 +21,6 @@ public class GrossFabricHacks implements LanguageAdapter {
     @Override
     public native <T> T create(net.fabricmc.loader.api.ModContainer mod, String value, Class<T> type);
 
-/*
-    private static void loadSimpleMethodHandle() {
-        try {
-            final String internalName = "net/devtech/grossfabrichacks/reflection/SimpleMethodHandle";
-            final ClassReader reader = new ClassReader(GrossFabricHacks.class.getClassLoader().getResourceAsStream(internalName + ".class"));
-            final ClassNode klass = new ClassNode();
-            reader.accept(klass, 0);
-
-            final MethodNode[] methods = klass.methods.toArray(new MethodNode[0]);
-
-            for (final MethodNode method : methods) {
-                if (method.desc.equals("([Ljava/lang/Object;)Ljava/lang/Object;")) {
-                    method.access &= ~Opcodes.ACC_NATIVE;
-
-                    method.visitVarInsn(Opcodes.ALOAD, 0);
-                    method.visitFieldInsn(Opcodes.GETFIELD, internalName, "delegate", Type.getDescriptor(MethodHandle.class));
-                    method.visitVarInsn(Opcodes.ALOAD, 1);
-                    method.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(MethodHandle.class), "invoke", "([Ljava/lang/Object;)Ljava/lang/Object;", false);
-                    method.visitInsn(Opcodes.ARETURN);
-                }
-            }
-        } catch (final Throwable throwable) {
-            throw new RuntimeException(throwable);
-        }
-    }
- */
-
     public static class State {
         public static boolean mixinLoaded;
         public static boolean manualLoad;
@@ -109,7 +82,7 @@ public class GrossFabricHacks implements LanguageAdapter {
             throw new RuntimeException(throwable);
         }
 
-        TransformerApi.registerPostMixinAsmClassTransformer((one, two) -> {});
+        TransformerApi.registerPostMixinAsmClassTransformer((one, two) -> {System.out.println(two.name);});
         InstrumentationApi.retransform(Object.class, (one, two) -> {});
 
         DynamicEntry.executeOptionalEntrypoint("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
