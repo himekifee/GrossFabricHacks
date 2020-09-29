@@ -105,12 +105,8 @@ public class UnsafeUtil extends Unsafe {
         return (B[]) obj;
     }
 
-    public static <B> B defineAndInitializeAndUnsafeCast(final Object object, final String klass, final ClassLoader loader) {
-        return unsafeCast(object, getKlassFromClass(findAndDefineAndInitializeClass(klass, loader)));
-    }
-
     public static <B> B unsafeCast(final Object object, final String klass) {
-        return unsafeCast(object, loadClass(klass));
+        return unsafeCast(object, getKlassFromClass(loadClass(klass)));
     }
 
     public static <B> B unsafeCast(final Object object, final Class<?> klass) {
@@ -259,14 +255,6 @@ public class UnsafeUtil extends Unsafe {
         }
     }
 
-    public static <T> Class<T> findAndDefineAndInitializeClass(final String binaryName, final ClassLoader loader) {
-        try {
-            return initializeClass(findAndDefineClass(binaryName, loader));
-        } catch (final Throwable throwable) {
-            throw new RuntimeException(throwable);
-        }
-    }
-
     public static <T> Class<T> loadClass(final String name) {
         try {
             return (Class<T>) Class.forName(name);
@@ -289,21 +277,29 @@ public class UnsafeUtil extends Unsafe {
 
     static {
         try {
+            final byte[] byteArray = new byte[0];
+            final short[] intArray = new short[0];
+
+            // OpenJ9 stores the class pointer in a different location. This method should work:tm: for all JVMs.
+            int offset = 0;
+
+            while (getInt(byteArray, offset) == getInt(intArray, offset)) {
+                offset += 4;
+            }
+
+            KLASS_OFFSET = offset;
             FIELD_OFFSET = objectFieldOffset(FirstInt.class.getField("val"));
 
             if (FIELD_OFFSET == 8) { // 32bit jvm
                 x64 = false;
-                KLASS_OFFSET = FIELD_OFFSET - 4;
                 EIGHT_BYTE_KLASS = false;
                 CLASS_KLASS_OFFSET = 80;
             } else if (FIELD_OFFSET == 12) { // 64bit jvm with compressed OOPs
                 x64 = true;
-                KLASS_OFFSET = FIELD_OFFSET - 4;
                 EIGHT_BYTE_KLASS = false;
                 CLASS_KLASS_OFFSET = 84;
             } else if (FIELD_OFFSET == 16) { // 64bit jvm
                 x64 = true;
-                KLASS_OFFSET = FIELD_OFFSET - 8;
                 EIGHT_BYTE_KLASS = true;
                 CLASS_KLASS_OFFSET = 160;
             } else {

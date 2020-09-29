@@ -1,4 +1,4 @@
-package net.devtech.grossfabrichacks;
+package net.devtech.grossfabrichacks.util;
 
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 

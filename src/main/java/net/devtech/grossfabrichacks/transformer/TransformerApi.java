@@ -3,6 +3,7 @@ package net.devtech.grossfabrichacks.transformer;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
+import net.fabricmc.loader.api.FabricLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.transformer.HackedMixinTransformer;
@@ -17,7 +18,7 @@ public class TransformerApi {
 	public static void manualLoad() {
 		if (GrossFabricHacks.State.mixinLoaded) {
 			try {
-				Class.forName("org.spongepowered.asm.mixin.transformer.HackedMixinTransformer");
+				Class.forName("org.spongepowered.asm.mixin.transformer.HackedMixinTransformer", true, FabricLoader.class.getClassLoader());
 			} catch (final ClassNotFoundException exception) {
 				throw new RuntimeException(exception);
 			}

@@ -1,4 +1,4 @@
-package net.devtech.grossfabrichacks;
+package net.devtech.grossfabrichacks.util;
 
 @FunctionalInterface
 public interface ThrowingIntConsumer {

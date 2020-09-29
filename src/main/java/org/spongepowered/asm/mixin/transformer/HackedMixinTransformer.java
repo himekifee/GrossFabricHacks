@@ -32,7 +32,6 @@ public class HackedMixinTransformer extends MixinTransformer {
     public byte[] transform(MixinEnvironment environment, ClassNode classNode, byte[] original) {
         final String name = classNode.name;
 
-        // return immediately to reduce jumps and assignments
         if (GrossFabricHacks.State.shouldWrite) {
             if (GrossFabricHacks.State.transformPreMixinAsmClass) {
                 GrossFabricHacks.State.preMixinAsmClassTransformer.transform(name, classNode);
@@ -65,16 +64,17 @@ public class HackedMixinTransformer extends MixinTransformer {
 
             LOGGER.info("MixinTransformer found! " + mixinTransformer);
 
+            processor = Reflect.getObject(mixinTransformer, Reflect.getField(superclass, "processor"));
+
             // here, we modify the klass pointer in the object to point towards the HackedMixinTransformer class, effectively turning the existing
             // MixinTransformer instance into an instance of HackedMixinTransformer
-            UnsafeUtil.unsafeCast(mixinTransformer, "org.spongepowered.asm.mixin.transformer.HackedMixinTransformer");
+            UnsafeUtil.unsafeCast(mixinTransformer, HackedMixinTransformer.class);
 
             LOGGER.info("Unsafe cast Mixin transformer success!");
 
             instance = (HackedMixinTransformer) mixinTransformer;
-            processor = Reflect.getObject(mixinTransformer, Reflect.getField(Class.forName("org.spongepowered.asm.mixin.transformer.MixinTransformer"), "processor"));
             extensions = (Extensions) instance.getExtensions();
-        } catch (Throwable throwable) {
+        } catch (final Throwable throwable) {
             throw new RuntimeException(throwable);
         }
     }

@@ -142,17 +142,16 @@ public class InstrumentationApi {
     static {
         try {
             final String name = ManagementFactory.getRuntimeMXBean().getName();
-            final File jar = new File(System.getProperty("user.home"), "gross_agent.jar");
+            final File agent = new File(System.getProperty("user.home"), "gross_agent.jar");
 
             LOGGER.info("Attaching instrumentation agent to VM.");
 
-            LOGGER.info(jar.getAbsolutePath());
-            IOUtils.write(IOUtils.toByteArray(GrossFabricHacks.class.getClassLoader().getResource("jars/gross_agent.jar")), new FileOutputStream(jar));
-            ByteBuddyAgent.attach(jar, name.substring(0, name.indexOf('@')));
+            IOUtils.write(IOUtils.toByteArray(GrossFabricHacks.class.getClassLoader().getResource("jars/gross_agent.jar")), new FileOutputStream(agent));
+            ByteBuddyAgent.attach(agent, name.substring(0, name.indexOf('@')));
 
             LOGGER.info("Successfully attached instrumentation agent.");
 
-            jar.delete();
+            agent.delete();
 
             final Field field = Class.forName("net.devtech.grossfabrichacks.instrumentation.InstrumentationAgent", false, FabricLoader.class.getClassLoader()).getDeclaredField("instrumentation");
 
@@ -160,7 +159,7 @@ public class InstrumentationApi {
 
             instrumentation = (Instrumentation) field.get(null);
         } catch (final Throwable throwable) {
-            LOGGER.error("An error occurred during an attempt to attach an instrumentation agent, which might be due to spaces in the path of the game's installation.", throwable);
+            throw new RuntimeException(throwable);
         }
     }
 }
