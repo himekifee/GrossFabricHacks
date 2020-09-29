@@ -107,7 +107,6 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
 
         try {
             for (final String name : new String[]{
-                "net.devtech.grossfabrichacks.GrossFabricHacks$State",
                 "net.devtech.grossfabrichacks.unsafe.UnsafeUtil$FirstInt",
                 "net.devtech.grossfabrichacks.unsafe.UnsafeUtil"}) {
                 classes.put(name, Class.forName(name, false, applicationClassLoader));
@@ -117,6 +116,9 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
         }
 
         for (final String name : new String[]{
+            "net.devtech.grossfabrichacks.GrossFabricHacks$State",
+            "net.devtech.grossfabrichacks.instrumentation.InstrumentationAgent",
+            "net.devtech.grossfabrichacks.instrumentation.InstrumentationApi",
             "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",
             "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
             "net.devtech.grossfabrichacks.transformer.TransformerApi",

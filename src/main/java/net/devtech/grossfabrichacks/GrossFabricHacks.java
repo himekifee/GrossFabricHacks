@@ -2,8 +2,6 @@ package net.devtech.grossfabrichacks;
 
 import java.io.InputStream;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
-import net.devtech.grossfabrichacks.instrumentation.InstrumentationApi;
-import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.fabricmc.loader.api.FabricLoader;
@@ -44,19 +42,12 @@ public class GrossFabricHacks implements LanguageAdapter {
             final ClassLoader applicationClassLoader = FabricLoader.class.getClassLoader();
             final ClassLoader KnotClassLoader = GrossFabricHacks.class.getClassLoader();
 
+            final String UnsafeKnotClassLoader = "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader";
             final String[] classes = {
                 "net.gudenau.lib.unsafe.Unsafe",
-                "net.devtech.grossfabrichacks.instrumentation.InstrumentationAgent",
-                "net.devtech.grossfabrichacks.instrumentation.InstrumentationApi",
-                "net.devtech.grossfabrichacks.GrossFabricHacks$State",
-                "net.devtech.grossfabrichacks.mixin.GrossFabricHacksPlugin",
-                "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",
-                "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
-                "net.devtech.grossfabrichacks.transformer.TransformerApi",
                 "net.devtech.grossfabrichacks.unsafe.UnsafeUtil",
                 "net.devtech.grossfabrichacks.unsafe.UnsafeUtil$FirstInt",
-                "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader",
-                "org.spongepowered.asm.mixin.transformer.HackedMixinTransformer"
+                UnsafeKnotClassLoader
             };
 
             final int classCount = classes.length;
@@ -71,6 +62,8 @@ public class GrossFabricHacks implements LanguageAdapter {
                 Reflect.defineClass(applicationClassLoader, name, bytecode, GrossFabricHacks.class.getProtectionDomain());
             }
 
+            Class.forName(UnsafeKnotClassLoader, true, applicationClassLoader);
+
             final String name = "net.devtech.grossfabrichacks.mixin.GrossFabricHacksPlugin";
             final InputStream classStream = KnotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class");
             final byte[] bytecode = new byte[classStream.available()];
@@ -81,9 +74,6 @@ public class GrossFabricHacks implements LanguageAdapter {
         } catch (final Throwable throwable) {
             throw new RuntimeException(throwable);
         }
-
-        TransformerApi.registerPostMixinAsmClassTransformer((one, two) -> {System.out.println(two.name);});
-        InstrumentationApi.retransform(Object.class, (one, two) -> {});
 
         DynamicEntry.executeOptionalEntrypoint("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
     }
