@@ -1,11 +1,11 @@
 package net.devtech.grossfabrichacks;
 
-import java.io.InputStream;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.LanguageAdapter;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import user11681.dynamicentry.DynamicEntry;
@@ -54,23 +54,13 @@ public class GrossFabricHacks implements LanguageAdapter {
 
             for (int i = FabricLoader.getInstance().isDevelopmentEnvironment() ? 1 : 0; i < classCount; i++) {
                 final String name = classes[i];
-                final InputStream classStream = KnotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class");
-                final byte[] bytecode = new byte[classStream.available()];
-
-                while (classStream.read(bytecode) != -1) {}
-
-                Reflect.defineClass(applicationClassLoader, name, bytecode, GrossFabricHacks.class.getProtectionDomain());
+                Reflect.defineClass(applicationClassLoader, name, IOUtils.toByteArray(KnotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class")), GrossFabricHacks.class.getProtectionDomain());
             }
 
             Class.forName(UnsafeKnotClassLoader, true, applicationClassLoader);
 
             final String name = "net.devtech.grossfabrichacks.mixin.GrossFabricHacksPlugin";
-            final InputStream classStream = KnotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class");
-            final byte[] bytecode = new byte[classStream.available()];
-
-            while (classStream.read(bytecode) != -1) {}
-
-            Reflect.defineClass(KnotClassLoader, name, bytecode, GrossFabricHacks.class.getProtectionDomain());
+            Reflect.defineClass(KnotClassLoader, name, IOUtils.toByteArray(KnotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class")), GrossFabricHacks.class.getProtectionDomain());
         } catch (final Throwable throwable) {
             throw new RuntimeException(throwable);
         }
