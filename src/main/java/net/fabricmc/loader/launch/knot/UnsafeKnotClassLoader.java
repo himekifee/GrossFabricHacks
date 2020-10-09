@@ -15,7 +15,6 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
     public static final URLClassLoader parent;
     public static final ClassLoader dummyClassLoader;
     public static final KnotClassDelegate delegate;
-    public static final Object systemClassLoaderPath;
 
     private static final Logger logger = LogManager.getLogger("GrossFabricHacks/UnsafeKnotClassLoader");
 
@@ -98,9 +97,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
         dummyClassLoader = parent.getParent();
         delegate = knotClassLoader.getDelegate();
         instance = UnsafeUtil.unsafeCast(knotClassLoader, UnsafeKnotClassLoader.class);
-        systemClassLoaderPath = Classes.getClassPath(Classes.systemClassLoader);
 
-        UnsafeUtil.unsafeCast(parent, SharingDynamicURLClassLoader.class);
         UnsafeUtil.unsafeCast(delegate, EarlyKnotClassDelegate.class);
     }
 }
