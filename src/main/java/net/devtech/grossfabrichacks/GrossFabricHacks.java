@@ -28,27 +28,26 @@ public class GrossFabricHacks implements LanguageAdapter {
 
     public static File getAgent() {
         final String source = GrossFabricHacks.class.getProtectionDomain().getCodeSource().getLocation().getFile();
-        final File agent;
 
-        if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
-            agent = new File(System.getProperty("user.home"), "gross_agent.jar");
+        if (source.endsWith(".jar")) {
+            return new File(source);
+        }
 
-            if (!agent.exists()) {
-                try {
-                    final JarOutputStream agentJar = new JarOutputStream(new FileOutputStream(agent), new Manifest(new FileInputStream(new File(source, "/META-INF/MANIFEST.MF"))));
-                    final String agentPath = "net/devtech/grossfabrichacks/instrumentation/InstrumentationAgent.class";
+        final File agent = new File(System.getProperty("user.home"), "gross_agent.jar");
 
-                    agentJar.putNextEntry(new ZipEntry(agentPath));
+        if (!agent.exists()) {
+            try {
+                final JarOutputStream agentJar = new JarOutputStream(new FileOutputStream(agent), new Manifest(new FileInputStream(new File(source, "/META-INF/MANIFEST.MF"))));
+                final String agentPath = "net/devtech/grossfabrichacks/instrumentation/InstrumentationAgent.class";
 
-                    IOUtils.write(IOUtils.toByteArray(GrossFabricHacks.class.getResourceAsStream("/" + agentPath)), agentJar);
+                agentJar.putNextEntry(new ZipEntry(agentPath));
 
-                    agentJar.close();
-                } catch (final IOException exception) {
-                    throw new UncheckedIOException(exception);
-                }
+                IOUtils.write(IOUtils.toByteArray(GrossFabricHacks.class.getResourceAsStream("/" + agentPath)), agentJar);
+
+                agentJar.close();
+            } catch (final IOException exception) {
+                throw new UncheckedIOException(exception);
             }
-        } else {
-            agent = new File(source);
         }
 
         return agent;
