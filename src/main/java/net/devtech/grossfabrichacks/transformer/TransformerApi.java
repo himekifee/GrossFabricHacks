@@ -3,10 +3,10 @@ package net.devtech.grossfabrichacks.transformer;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
-import net.fabricmc.loader.api.FabricLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.transformer.HackedMixinTransformer;
+import user11681.reflect.Classes;
 
 /**
  * The API class for getting access to transforming any and all classes loaded by the KnotClassLoader (or whatever classloader happens to calls mixin)
@@ -17,11 +17,7 @@ public class TransformerApi {
 	 */
 	public static void manualLoad() {
 		if (GrossFabricHacks.State.mixinLoaded) {
-			try {
-				Class.forName("org.spongepowered.asm.mixin.transformer.HackedMixinTransformer", true, FabricLoader.class.getClassLoader());
-			} catch (final ClassNotFoundException exception) {
-				throw new RuntimeException(exception);
-			}
+			Classes.load(Classes.systemClassLoader, "org.spongepowered.asm.mixin.transformer.HackedMixinTransformer");
 		} else {
 			GrossFabricHacks.State.manualLoad = true;
 		}

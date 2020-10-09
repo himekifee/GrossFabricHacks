@@ -1,30 +1,29 @@
 package net.devtech.grossfabrichacks;
 
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
+import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.LanguageAdapter;
-import org.apache.commons.io.IOUtils;
+import net.fabricmc.loader.api.ModContainer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.objectweb.asm.tree.ClassNode;
 import user11681.dynamicentry.DynamicEntry;
-import user11681.reflect.Reflect;
+import user11681.reflect.Classes;
 
 public class GrossFabricHacks implements LanguageAdapter {
-    private static final Logger LOGGER = LogManager.getLogger("GrossFabricHacks");
-
-//    public static final UnsafeKnotClassLoader UNSAFE_LOADER;
+    private static final Logger logger = LogManager.getLogger("GrossFabricHacks");
 
     @Override
-    public native <T> T create(net.fabricmc.loader.api.ModContainer mod, String value, Class<T> type);
+    public native <T> T create(ModContainer mod, String value, Class<T> type);
 
     public static class State {
         public static boolean mixinLoaded;
         public static boolean manualLoad;
 
         public static boolean shouldWrite;
-        // micro-optimization: cache transformer presence
         public static boolean transformPreMixinRawClass;
         public static boolean transformPreMixinAsmClass;
         public static boolean transformPostMixinRawClass;
@@ -36,34 +35,32 @@ public class GrossFabricHacks implements LanguageAdapter {
     }
 
     static {
-        LOGGER.info("no good? no, this man is definitely up to evil.");
+        logger.info("no good? no, this man is definitely up to evil.");
 
-        try {
-            final ClassLoader applicationClassLoader = FabricLoader.class.getClassLoader();
-            final ClassLoader KnotClassLoader = GrossFabricHacks.class.getClassLoader();
+        if (!FabricLoader.getInstance().isDevelopmentEnvironment()) {
+            final ClassLoader knotClassLoader = GrossFabricHacks.class.getClassLoader();
 
-            final String UnsafeKnotClassLoader = "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader";
-            final String[] classes = {
+            for (final String name : new String[]{
                 "net.gudenau.lib.unsafe.Unsafe",
                 "net.devtech.grossfabrichacks.unsafe.UnsafeUtil",
-                "net.devtech.grossfabrichacks.unsafe.UnsafeUtil$FirstInt",
-                UnsafeKnotClassLoader
-            };
-
-            final int classCount = classes.length;
-
-            for (int i = FabricLoader.getInstance().isDevelopmentEnvironment() ? 1 : 0; i < classCount; i++) {
-                final String name = classes[i];
-                Reflect.defineClass(applicationClassLoader, name, IOUtils.toByteArray(KnotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class")), GrossFabricHacks.class.getProtectionDomain());
+                "user11681.reflect.Accessor",
+                "user11681.reflect.Classes",
+                "user11681.reflect.Fields",
+                "user11681.reflect.Invoker",
+                "user11681.reflect.Reflect"}) {
+                Classes.defineSystemClass(knotClassLoader, name);
             }
-
-            Class.forName(UnsafeKnotClassLoader, true, applicationClassLoader);
-
-            final String name = "net.devtech.grossfabrichacks.mixin.GrossFabricHacksPlugin";
-            Reflect.defineClass(KnotClassLoader, name, IOUtils.toByteArray(KnotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class")), GrossFabricHacks.class.getProtectionDomain());
-        } catch (final Throwable throwable) {
-            throw new RuntimeException(throwable);
         }
+
+        Classes.addURL(Classes.systemClassLoader, GrossFabricHacks.class.getProtectionDomain().getCodeSource().getLocation());
+        Classes.load(Classes.systemClassLoader,
+            "net.devtech.grossfabrichacks.GrossFabricHacks$State",
+            "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",
+            "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
+            "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader"
+        );
+
+        TransformerApi.registerPostMixinAsmClassTransformer((final ClassNode klass) -> logger.info(klass.name));
 
         DynamicEntry.executeOptionalEntrypoint("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
     }

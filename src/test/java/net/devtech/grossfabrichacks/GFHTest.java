@@ -1,50 +1,35 @@
 package net.devtech.grossfabrichacks;
 
+import net.devtech.grossfabrichacks.instrumentation.InstrumentationApi;
 import net.devtech.grossfabrichacks.unsafe.UnsafeUtil;
 import net.gudenau.lib.unsafe.Unsafe;
+import net.minecraft.block.Block;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.annotation.Testable;
 
 @Testable
 class GFHTest {
-//    static Logger LOGGER = LogManager.getLogger();
-//    static final int iterations = 5000;
+    static final GFHTest instance = new GFHTest();
+    //    static Logger LOGGER = LogManager.getLogger();
+    static final int iterations = 5000;
 
     @Test
-    void test() {
-        // we have achieved OpenJ9 support
+    void test() throws Throwable {
+        final Object[] objects = {new GFHTest(), Unsafe.allocateInstance(Block.class)};
+        final int offset = Unsafe.arrayBaseOffset(objects.getClass());
+        final int scale = Unsafe.arrayIndexScale(objects.getClass());
+        final long address0 = (Unsafe.getInt(objects, offset) & 0xFFFFFFFFL) * UnsafeUtil.addressFactor;
+        final long address1 = (Unsafe.getInt(objects, offset + scale) & 0xFFFFFFFFL) * UnsafeUtil.addressFactor;
 
-        final byte[] byteArray = new byte[8];
-        final int[] intArray = new int[2];
-        final long[] longArray = new long[1];
-        final GFHTest test = new GFHTest();
-        final GFHTest test1 = new GFHTest();
-        final GFHTest test2 = new GFHTest();
-        final GFHTest test3 = new GFHTest();
-        final GFHTest test4 = new GFHTest();
-        final Testt testt = new Testt();
-
-        printThings(byteArray);
-        printThings(intArray);
-        printThings(longArray);
-        printThings(test);
-        printThings(test1);
-        printThings(test2);
-        printThings(test3);
-        printThings(test4);
-
-        System.out.println(test4.getClass());
-        Unsafe.putInt(test4, UnsafeUtil.KLASS_OFFSET, Unsafe.getInt(testt, UnsafeUtil.KLASS_OFFSET));
-        System.out.println(test4.getClass());
+        System.out.println(Long.toHexString(address0));
+        System.out.println(Long.toHexString(address1));
     }
 
-    void printThings(final Object object) {
-        for (int i = 0; i < 16; i++) {
-            System.out.printf("%08X ", Unsafe.getInt(object, 4 * i));
+    void printValues(final Object object) {
+        for (int i = 0; i < InstrumentationApi.instrumentation.getObjectSize(object); i += 4) {
+            System.out.printf("%08X ", Unsafe.getInt(object, i));
         }
 
         System.out.println();
     }
-
-    static class Testt {}
 }

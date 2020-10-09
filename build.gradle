@@ -9,9 +9,9 @@ plugins {
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
+project.group = project.mavenGroup
 project.archivesBaseName = project.baseName
 project.version = project.modVersion
-project.group = project.mavenGroup
 
 repositories {
     maven {url = "https://dl.bintray.com/user11681/maven"}
@@ -19,21 +19,20 @@ repositories {
 
 dependencies {
     minecraft("com.mojang:minecraft:${project.minecraftVersion}")
-    mappings("net.fabricmc:yarn:${project.yarnMappings}:v2")
+    mappings("net.fabricmc:yarn:${project.minecraftVersion}+build.${project.yarnBuild}:v2")
     modImplementation("net.fabricmc:fabric-loader:${project.loaderVersion}")
-
-    compileOnly("com.google.code.findbugs:jsr305:+")
-    compileOnly("org.jetbrains:annotations:+")
 
     testImplementation("org.junit.jupiter:junit-jupiter:+")
 
     // concern
     // extraLibs files("${System.getProperty('java.home')}/../lib/tools.jar")
 
+    modApi("user11681:narratoroff:+")
+
     modApi(include("user11681:dynamicentry:0.0.2"))
-    implementation(include("user11681:reflect:0.3.1"))
-    implementation(include("net.gudenau.lib:unsafe:1.2.14"))
-    implementation(include("net.bytebuddy:byte-buddy-agent:+"))
+    modApi(include("user11681:reflect:0.10.1"))
+    modApi(include("net.gudenau.lib:unsafe:1.2.14"))
+    modApi(include("net.bytebuddy:byte-buddy-agent:+"))
 }
 
 processResources {

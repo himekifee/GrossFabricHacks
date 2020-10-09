@@ -1,14 +1,16 @@
 package net.devtech.grossfabrichacks.unsafe;
 
-import java.io.InputStream;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.security.ProtectionDomain;
 import net.gudenau.lib.unsafe.Unsafe;
+import org.apache.commons.io.IOUtils;
+import user11681.reflect.Classes;
 
 /**
  * works across all normal JVMs I think
  */
-public class UnsafeUtil extends Unsafe {
+public class UnsafeUtil {
     // constants
     public static final boolean x64;
     public static final int addressFactor;
@@ -97,16 +99,16 @@ public class UnsafeUtil extends Unsafe {
      */
     public static <B> B[] arrayCast(Object[] obj, long classKlass) {
         if (EIGHT_BYTE_KLASS) {
-            getAndSetLong(obj, KLASS_OFFSET, classKlass);
+            Unsafe.getAndSetLong(obj, KLASS_OFFSET, classKlass);
         } else {
-            getAndAddInt(obj, KLASS_OFFSET, (int) classKlass);
+            Unsafe.getAndAddInt(obj, KLASS_OFFSET, (int) classKlass);
         }
 
         return (B[]) obj;
     }
 
     public static <B> B unsafeCast(final Object object, final String klass) {
-        return unsafeCast(object, getKlassFromClass(loadClass(klass)));
+        return unsafeCast(object, getKlassFromClass(Classes.load(klass)));
     }
 
     public static <B> B unsafeCast(final Object object, final Class<?> klass) {
@@ -124,9 +126,9 @@ public class UnsafeUtil extends Unsafe {
      */
     public static <B> B unsafeCast(Object object, long klassValue) {
         if (EIGHT_BYTE_KLASS) {
-            getAndSetLong(object, KLASS_OFFSET, klassValue);
+            Unsafe.getAndSetLong(object, KLASS_OFFSET, klassValue);
         } else {
-            getAndSetInt(object, KLASS_OFFSET, (int) (klassValue));
+            Unsafe.getAndSetInt(object, KLASS_OFFSET, (int) (klassValue));
         }
 
         return (B) object;
@@ -139,17 +141,17 @@ public class UnsafeUtil extends Unsafe {
      */
     public static long getKlass(Object cls) {
         if (EIGHT_BYTE_KLASS) {
-            return getLong(cls, KLASS_OFFSET);
+            return Unsafe.getLong(cls, KLASS_OFFSET);
         }
 
-        return getInt(cls, KLASS_OFFSET);
+        return Unsafe.getInt(cls, KLASS_OFFSET);
     }
 
     /**
      * get the klass pointer of a class, only works on instantiatable classes
      */
     public static long getKlassFromClass(Class<?> type) {
-        return getKlass(allocateInstance(type));
+        return getKlass(Unsafe.allocateInstance(type));
     }
 
     /**
@@ -160,15 +162,15 @@ public class UnsafeUtil extends Unsafe {
     @Deprecated
     public static long getKlassFromClass0(Class<?> type) {
         if (EIGHT_BYTE_KLASS) {
-            return getLong(type, CLASS_KLASS_OFFSET);
+            return Unsafe.getLong(type, CLASS_KLASS_OFFSET);
         }
 
-        return getInt(type, CLASS_KLASS_OFFSET);
+        return Unsafe.getInt(type, CLASS_KLASS_OFFSET);
     }
 
     public static void putInt(final Object object, final String field, final int value) {
         try {
-            putInt(object, objectFieldOffset(object.getClass().getDeclaredField(field)), value);
+            Unsafe.putInt(object, Unsafe.objectFieldOffset(object.getClass().getDeclaredField(field)), value);
         } catch (final NoSuchFieldException exception) {
             throw new RuntimeException(exception);
         }
@@ -176,7 +178,7 @@ public class UnsafeUtil extends Unsafe {
 
     public static void putInt(final Class<?> klass, final Object object, final String field, final int value) {
         try {
-            putInt(object, objectFieldOffset(klass.getDeclaredField(field)), value);
+            Unsafe.putInt(object, Unsafe.objectFieldOffset(klass.getDeclaredField(field)), value);
         } catch (final NoSuchFieldException exception) {
             throw new RuntimeException(exception);
         }
@@ -184,9 +186,9 @@ public class UnsafeUtil extends Unsafe {
 
     public static <T> T getObject(final long address) {
         final Object[] box = new Object[1];
-        final long baseOffset = arrayBaseOffset(Object[].class);
+        final long baseOffset = Unsafe.arrayBaseOffset(Object[].class);
 
-        putLong(box, baseOffset, address);
+        Unsafe.putLong(box, baseOffset, address);
 
         return (T) box[0];
     }
@@ -196,10 +198,10 @@ public class UnsafeUtil extends Unsafe {
     }
 
     public static long addressOf(final int index, final Object... objects) {
-        final long offset = arrayBaseOffset(objects.getClass());
-        final long scale = arrayIndexScale(objects.getClass());
+        final long offset = Unsafe.arrayBaseOffset(objects.getClass());
+        final long scale = Unsafe.arrayIndexScale(objects.getClass());
 
-        return (getInt(objects, offset + index * scale) & 0xFFFFFFFL) * addressFactor;
+        return (Unsafe.getInt(objects, offset + index * scale) & 0xFFFFFFFFL) * addressFactor;
     }
 
     public static <T> Class<T> defineAndInitialize(final String binaryName, final byte[] klass) {
@@ -214,28 +216,28 @@ public class UnsafeUtil extends Unsafe {
                                                    final ClassLoader loader, final ProtectionDomain protectionDomain) {
         final Class<?> klass;
 
-        ensureClassInitialized(klass = defineClass(binaryName, bytecode, 0, bytecode.length, loader, protectionDomain));
+        Unsafe.ensureClassInitialized(klass = Unsafe.defineClass(binaryName, bytecode, 0, bytecode.length, loader, protectionDomain));
 
         return (Class<T>) klass;
     }
 
     public static <T> Class<T> initializeClass(final Class<?> klass) {
-        ensureClassInitialized(klass);
+        Unsafe.ensureClassInitialized(klass);
 
         return (Class<T>) klass;
     }
 
     public static <T> Class<T> defineClass(final String binaryName, final byte[] klass) {
-        return defineClass(binaryName, klass, 0, klass.length, null, null);
+        return Unsafe.defineClass(binaryName, klass, 0, klass.length, null, null);
     }
 
     public static <T> Class<T> defineClass(final String binaryName, final byte[] klass, final ClassLoader loader) {
-        return defineClass(binaryName, klass, 0, klass.length, loader, null);
+        return Unsafe.defineClass(binaryName, klass, 0, klass.length, loader, null);
     }
 
     public static <T> Class<T> defineClass(final String binaryName, final byte[] klass,
                                            final ClassLoader loader, final ProtectionDomain protectionDomain) {
-        return defineClass(binaryName, klass, 0, klass.length, loader, protectionDomain);
+        return Unsafe.defineClass(binaryName, klass, 0, klass.length, loader, protectionDomain);
     }
 
     public static <T> Class<T> findAndDefineClass(final String binaryName, final ClassLoader loader) {
@@ -244,29 +246,8 @@ public class UnsafeUtil extends Unsafe {
 
     public static byte[] findClass(final String binaryName) {
         try {
-            final InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(binaryName.replace('.', '/') + ".class");
-            final byte[] bytecode = new byte[stream.available()];
-
-            while (stream.read(bytecode) != -1) {}
-
-            return bytecode;
-        } catch (final Throwable throwable) {
-            throw new RuntimeException(throwable);
-        }
-    }
-
-    public static <T> Class<T> loadClass(final String name) {
-        try {
-            return (Class<T>) Class.forName(name);
-        } catch (final ClassNotFoundException exception) {
-            throw new RuntimeException(exception);
-        }
-    }
-
-    public static <T> Class<T> loadClass(final String name, final boolean initialize, final ClassLoader loader) {
-        try {
-            return (Class<T>) Class.forName(name, initialize, loader);
-        } catch (final ClassNotFoundException exception) {
+            return IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream(binaryName.replace('.', '/') + ".class"));
+        } catch (final IOException exception) {
             throw new RuntimeException(exception);
         }
     }
@@ -283,12 +264,12 @@ public class UnsafeUtil extends Unsafe {
             // OpenJ9 stores the class pointer in a different location. This method should work:tm: for all JVMs.
             int offset = 0;
 
-            while (getInt(byteArray, offset) == getInt(intArray, offset)) {
+            while (Unsafe.getInt(byteArray, offset) == Unsafe.getInt(intArray, offset)) {
                 offset += 4;
             }
 
             KLASS_OFFSET = offset;
-            FIELD_OFFSET = objectFieldOffset(FirstInt.class.getField("val"));
+            FIELD_OFFSET = Unsafe.objectFieldOffset(FirstInt.class.getField("val"));
 
             if (FIELD_OFFSET == 8) { // 32bit jvm
                 x64 = false;
