@@ -60,15 +60,19 @@ public class Relauncher {
         }
     }
 
+    public static ObjectArrayList<String> getVMArguments() {
+        return ObjectArrayList.wrap(ManagementFactory.getRuntimeMXBean().getInputArguments().toArray(new String[0]));
+    }
+
     public static void relaunch() {
         relaunch(null);
     }
 
     public static void relaunch(final String mainClass, final String... arguments) {
-        final ObjectArrayList<String> VMArgs = new ObjectArrayList<>(ManagementFactory.getRuntimeMXBean().getInputArguments());
+        final ObjectArrayList<String> VMArgs = getVMArguments();
 
         // remove debugger
-        VMArgs.removeIf((final String argument) -> argument.startsWith("-agentlib") || argument.startsWith("-javaagent"));
+        VMArgs.removeIf((final String argument) -> argument.startsWith("-agentlib") /*|| argument.startsWith("-javaagent")*/);
 //        VMArgs.add("-javaagent:" + GrossFabricHacks.getAgent());
 
         final List<String> mainArgs = getGameArguments();
@@ -86,7 +90,7 @@ public class Relauncher {
         final String newClasspathStr = String.join(File.pathSeparator, classpath);
         final ReferenceArrayList<String> args = ReferenceArrayList.wrap(new String[0], 0);
 
-        args.add(new File(new File(home, "bin"), "java" + Platform.getExecutableExtension()).getAbsolutePath());
+        args.add(new File(new File(home, "bin"), "java" + OS.operatingSystem.executableExtension).getAbsolutePath());
         args.addAll(VMArgs);
         args.add("-cp");
         args.add(newClasspathStr);
