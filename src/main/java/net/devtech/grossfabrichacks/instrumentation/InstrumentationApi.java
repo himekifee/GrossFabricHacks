@@ -1,11 +1,9 @@
 package net.devtech.grossfabrichacks.instrumentation;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 import net.bytebuddy.agent.ByteBuddyAgent;
@@ -13,12 +11,12 @@ import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.devtech.grossfabrichacks.transformer.asm.AsmInstrumentationTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
-import net.fabricmc.loader.api.FabricLoader;
-import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
+import user11681.reflect.Accessor;
+import user11681.reflect.Classes;
 
 public class InstrumentationApi {
     private static final Set<String> TRANSFORMABLE = new HashSet<>();
@@ -192,22 +190,17 @@ public class InstrumentationApi {
     static {
         try {
             final String name = ManagementFactory.getRuntimeMXBean().getName();
-            final File agent = new File(System.getProperty("user.home"), "gross_agent.jar");
+            final File agent = GrossFabricHacks.getAgent();
 
             LOGGER.info("Attaching instrumentation agent to VM.");
 
-            IOUtils.write(IOUtils.toByteArray(GrossFabricHacks.class.getClassLoader().getResource("jars/gross_agent.jar")), new FileOutputStream(agent));
             ByteBuddyAgent.attach(agent, name.substring(0, name.indexOf('@')));
 
             LOGGER.info("Successfully attached instrumentation agent.");
 
             agent.delete();
 
-            final Field field = Class.forName("net.devtech.grossfabrichacks.instrumentation.InstrumentationAgent", false, FabricLoader.class.getClassLoader()).getDeclaredField("instrumentation");
-
-            field.setAccessible(true);
-
-            instrumentation = (Instrumentation) field.get(null);
+            instrumentation = Accessor.getObject(Classes.load("net.devtech.grossfabrichacks.instrumentation.InstrumentationAgent"), "instrumentation");
         } catch (final Throwable throwable) {
             throw new RuntimeException(throwable);
         }

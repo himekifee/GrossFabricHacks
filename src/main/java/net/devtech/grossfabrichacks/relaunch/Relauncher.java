@@ -9,7 +9,6 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import org.apache.logging.log4j.LogManager;
@@ -67,33 +66,10 @@ public class Relauncher {
 
     public static void relaunch(final String mainClass, final String... arguments) {
         final ObjectArrayList<String> VMArgs = new ObjectArrayList<>(ManagementFactory.getRuntimeMXBean().getInputArguments());
-        final String source = GrossFabricHacks.class.getProtectionDomain().getCodeSource().getLocation().getFile();
-/*
-        final File agent;
-
-        if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
-            agent = new File(System.getProperty("user.home"), "gross_agent.jar");
-
-            try {
-                final JarOutputStream agentJar = new JarOutputStream(new FileOutputStream(agent), new Manifest(new FileInputStream(new File(source, "/META-INF/MANIFEST.MF"))));
-                final String agentPath = "net/devtech/grossfabrichacks/instrumentation/InstrumentationAgent.class";
-
-                agentJar.putNextEntry(new ZipEntry(agentPath));
-
-                IOUtils.write(IOUtils.toByteArray(GrossFabricHacks.class.getResourceAsStream("/" + agentPath)), agentJar);
-
-                agentJar.close();
-            } catch (final IOException exception) {
-                throw new UncheckedIOException(exception);
-            }
-        } else {
-            agent = new File(source);
-        }
-*/
 
         // remove debugger
         VMArgs.removeIf((final String argument) -> argument.startsWith("-agentlib") || argument.startsWith("-javaagent"));
-//        VMArgs.add("-javaagent:" + agent);
+//        VMArgs.add("-javaagent:" + GrossFabricHacks.getAgent());
 
         final List<String> mainArgs = getGameArguments();
 

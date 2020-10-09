@@ -1,15 +1,22 @@
 package net.devtech.grossfabrichacks;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
+import java.util.zip.ZipEntry;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
-import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.api.ModContainer;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.objectweb.asm.tree.ClassNode;
 import user11681.dynamicentry.DynamicEntry;
 import user11681.reflect.Classes;
 
@@ -18,6 +25,34 @@ public class GrossFabricHacks implements LanguageAdapter {
 
     @Override
     public native <T> T create(ModContainer mod, String value, Class<T> type);
+
+    public static File getAgent() {
+        final String source = GrossFabricHacks.class.getProtectionDomain().getCodeSource().getLocation().getFile();
+        final File agent;
+
+        if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
+            agent = new File(System.getProperty("user.home"), "gross_agent.jar");
+
+            if (!agent.exists()) {
+                try {
+                    final JarOutputStream agentJar = new JarOutputStream(new FileOutputStream(agent), new Manifest(new FileInputStream(new File(source, "/META-INF/MANIFEST.MF"))));
+                    final String agentPath = "net/devtech/grossfabrichacks/instrumentation/InstrumentationAgent.class";
+
+                    agentJar.putNextEntry(new ZipEntry(agentPath));
+
+                    IOUtils.write(IOUtils.toByteArray(GrossFabricHacks.class.getResourceAsStream("/" + agentPath)), agentJar);
+
+                    agentJar.close();
+                } catch (final IOException exception) {
+                    throw new UncheckedIOException(exception);
+                }
+            }
+        } else {
+            agent = new File(source);
+        }
+
+        return agent;
+    }
 
     public static class State {
         public static boolean mixinLoaded;
@@ -59,8 +94,6 @@ public class GrossFabricHacks implements LanguageAdapter {
             "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
             "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader"
         );
-
-        TransformerApi.registerPostMixinAsmClassTransformer((final ClassNode klass) -> logger.info(klass.name));
 
         DynamicEntry.executeOptionalEntrypoint("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
     }
