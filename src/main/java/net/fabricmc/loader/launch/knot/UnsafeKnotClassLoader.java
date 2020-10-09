@@ -27,7 +27,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
     @Override
     public boolean isClassLoaded(final String name) {
         synchronized (super.getClassLoadingLock(name)) {
-            return super.findLoadedClass(name) != null || Classes.findLoadedClass(Classes.systemClassLoader, name)/*classes.get(name)*/ != null;
+            return super.findLoadedClass(name) != null || Classes.findLoadedClass(Classes.systemClassLoader, name) != null;
         }
     }
 
@@ -37,7 +37,6 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
             Class<?> klass;
 
             if ((klass = this.findLoadedClass(name)) == null && (klass = Classes.findLoadedClass(Classes.systemClassLoader, name)) == null) {
-                try {
                     if (!name.startsWith("com.google.gson.") && !name.startsWith("java.")) {
                         final byte[] input = delegate.getPostMixinClassByteArray(name);
 
@@ -59,11 +58,6 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
                     } else {
                         klass = Classes.systemClassLoader.loadClass(name);
                     }
-                } catch (final ClassFormatError formatError) {
-                    logger.warn("A ClassFormatError was encountered while attempting to define {}; resorting to definition by the bootstrap class loader.", name);
-
-                    klass = UnsafeUtil.defineClass(name, delegate.getPostMixinClassByteArray(name));
-                }
             }
 
             if (resolve) {
