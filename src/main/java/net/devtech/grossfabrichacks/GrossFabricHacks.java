@@ -1,17 +1,18 @@
 package net.devtech.grossfabrichacks;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.file.FileSystem;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.ListIterator;
 
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePrePreLaunch;
+import net.devtech.grossfabrichacks.relaunch.RelaunchMarker;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.devtech.grossfabrichacks.unsafe.UnsafeUtil;
@@ -21,16 +22,20 @@ import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.discovery.ModResolver;
 import net.fabricmc.loader.game.MinecraftGameProvider;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import net.fabricmc.loader.launch.knot.Knot;
 import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 import net.gudenau.lib.unsafe.Unsafe;
 import net.fabricmc.loader.util.Arguments;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.*;
 import user11681.dynamicentry.DynamicEntry;
 
 public class GrossFabricHacks implements LanguageAdapter {
     private static final Logger LOGGER = LogManager.getLogger("GrossFabricHacks");
-    private static final String ARG_RELAUNCHED = GrossFabricHacks.class.getName() + ".RELAUNCHED";
 
     public static final UnsafeKnotClassLoader UNSAFE_LOADER;
 
@@ -81,17 +86,18 @@ public class GrossFabricHacks implements LanguageAdapter {
     }
 
     static {
-        boolean isRelaunched = Boolean.getBoolean(ARG_RELAUNCHED);
+        // We don't use isAnnotationPresent because Knot won't
+        // load the RelaunchMarker class from the AppClassLoader
+        boolean isRelaunched = Arrays.asList(Knot.class.getAnnotations()).stream().anyMatch(a -> a.annotationType().getName().equals(RelaunchMarker.class.getName()));
         relaunch:
         if(!isRelaunched) {
             try {
                 // get entrypoints
                 ReferenceArrayList<PrePrePrePreLaunch> entrypoints = ReferenceArrayList.wrap((PrePrePrePreLaunch[])Array.newInstance(PrePrePrePreLaunch.class, 5), 0);
                 DynamicEntry.executeOptionalEntrypoint("gfh:prePrePrePreLaunch", PrePrePrePreLaunch.class, entrypoints::add);
-                System.setProperty(ARG_RELAUNCHED, "true");
 
                 // don't relaunch if there is no point in doing so
-                if(entrypoints.size() == 0) break relaunch;
+                // if(entrypoints.size() == 0) break relaunch;
 
                 LOGGER.info("Relaunching...");
 
@@ -138,8 +144,18 @@ public class GrossFabricHacks implements LanguageAdapter {
                     System.setProperty("fabric.side", FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT ? "client" : "server");
                 }
 
+                // Set RelaunchLatch to true with ASM
+                String relaunchClassName = "net.fabricmc.loader.launch.knot.Knot";
+                ClassReader relaunchReader = new ClassReader(FabricLauncherBase.getLauncher().getClassByteArray(relaunchClassName, false));
+                ClassNode relaunchNode = new ClassNode();
+                relaunchReader.accept(relaunchNode, 0);
+                if(relaunchNode.visibleAnnotations == null) relaunchNode.visibleAnnotations = new ArrayList<>();
+                relaunchNode.visibleAnnotations.add(new AnnotationNode("Lnet/devtech/grossfabrichacks/relaunch/RelaunchMarker;"));
+                ClassWriter relaunchWriter = new ClassWriter(0);
+                relaunchNode.accept(relaunchWriter);
+                Class<?> newKnotClass = defineClass(relaunchClassName, relaunchWriter.toByteArray(), newAppClassLoader);
+
                 // run Knot
-                Class<?> newKnotClass = newAppClassLoader.loadClass("net.fabricmc.loader.launch.knot.Knot");
                 Method knotMain = newKnotClass.getMethod("main", String[].class);
                 try {
                     knotMain.invoke(null, (Object) args.toArray());
