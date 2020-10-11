@@ -1,5 +1,5 @@
 # GrossFabricHacks
-A series of hacks and utilities, for covering legitimate usecases in immoral ways
+A series of hacks and utilities
 
 How to use
 ---
@@ -7,12 +7,10 @@ https://github.com/Devan-Kerman/GrossFabricHacks/wiki
 
 ```groovy
 repositories {
-    maven {
-        url = 'https://raw.githubusercontent.com/Devan-Kerman/Devan-Repo/master/'
-    }
+    maven {url = "https://dl.bintray.com/user11681/maven"}
 }
 
 dependencies {
-    modImplementation group: 'net.devtech', name: 'grossfabrichacks', version: '6.1'
+    modApi(include("net.devtech:grossfabrichacks:+"))
 }
 ```

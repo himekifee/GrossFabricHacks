@@ -28,8 +28,6 @@ class GFHTest {
 
         System.out.println(ints);
         System.out.println(Arrays.toString(ints));
-
-        printValues(bytes);
     }
 
     @Test
