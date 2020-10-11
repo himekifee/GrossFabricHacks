@@ -30,9 +30,13 @@ dependencies {
     modApi("user11681:narratoroff:+")
 
     modApi(include("user11681:dynamicentry:0.1.1"))
-    modApi(include("user11681:reflect:0.10.1"))
-    modApi(include("net.gudenau.lib:unsafe:1.2.14"))
+    modApi(include("user11681:reflect:0.11.1"))
+    modApi(include("net.gudenau.lib:unsafe:1.2.15"))
     modApi(include("net.bytebuddy:byte-buddy-agent:+"))
+}
+
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
 }
 
 processResources {

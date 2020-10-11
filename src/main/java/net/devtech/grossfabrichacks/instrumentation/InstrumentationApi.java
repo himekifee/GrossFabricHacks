@@ -11,18 +11,13 @@ import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.devtech.grossfabrichacks.transformer.asm.AsmInstrumentationTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
-import user11681.reflect.Accessor;
-import user11681.reflect.Classes;
 
 public class InstrumentationApi {
-    private static final Set<String> TRANSFORMABLE = new HashSet<>();
-    private static final Logger LOGGER = LogManager.getLogger("GrossFabricHacks/InstrumentationApi");
+    private static final Set<String> transformable = new HashSet<>();
 
-    public static Instrumentation instrumentation;
+    public static final Instrumentation instrumentation;
 
     /**
      * adds a transformer that pipes a class through TransformerBootstrap,
@@ -34,7 +29,8 @@ public class InstrumentationApi {
      * @param cls the internal name of the class
      */
     public static void pipeClassThroughTransformerBootstrap(String cls) {
-        TRANSFORMABLE.add(cls);
+        transformable.add(cls);
+
         Transformable.init();
     }
 
@@ -158,8 +154,8 @@ public class InstrumentationApi {
             ClassNode node = new ClassNode();
             reader.accept(node, 0);
 
-            if (TRANSFORMABLE.remove(node.name)) {
-                if (TRANSFORMABLE.isEmpty()) {
+            if (transformable.remove(node.name)) {
+                if (transformable.isEmpty()) {
                     deinit();
                 }
 
@@ -188,21 +184,13 @@ public class InstrumentationApi {
     }
 
     static {
-        try {
-            final String name = ManagementFactory.getRuntimeMXBean().getName();
-            final File agent = GrossFabricHacks.getAgent();
+        final File agent = GrossFabricHacks.getAgent();
+        final String name = ManagementFactory.getRuntimeMXBean().getName();
 
-            LOGGER.info("Attaching instrumentation agent to VM.");
+        ByteBuddyAgent.attach(agent, name.substring(0, name.indexOf('@')));
 
-            ByteBuddyAgent.attach(agent, name.substring(0, name.indexOf('@')));
+        agent.delete();
 
-            LOGGER.info("Successfully attached instrumentation agent.");
-
-            agent.delete();
-
-            instrumentation = Accessor.getObject(Classes.load("net.devtech.grossfabrichacks.instrumentation.InstrumentationAgent"), "instrumentation");
-        } catch (final Throwable throwable) {
-            throw new RuntimeException(throwable);
-        }
+        instrumentation = InstrumentationAgent.instrumentation;
     }
 }

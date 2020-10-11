@@ -53,6 +53,9 @@ public class GrossFabricHacks implements LanguageAdapter {
         return agent;
     }
 
+    /**
+     * Intended to be loaded by the system class loader so that classes loaded by different class loaders may share information.
+     */
     public static class State {
         public static boolean mixinLoaded;
         public static boolean manualLoad;

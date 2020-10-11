@@ -1,13 +1,13 @@
 package org.spongepowered.asm.mixin.transformer;
 
 import net.devtech.grossfabrichacks.GrossFabricHacks;
-import net.devtech.grossfabrichacks.unsafe.UnsafeUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.transformer.ext.Extensions;
 import user11681.reflect.Accessor;
+import user11681.reflect.Classes;
 
 public class HackedMixinTransformer extends MixinTransformer {
     public static final HackedMixinTransformer instance;
@@ -64,9 +64,7 @@ public class HackedMixinTransformer extends MixinTransformer {
 
         // here, we modify the klass pointer in the object to point towards the HackedMixinTransformer class, effectively turning the existing
         // MixinTransformer instance into an instance of HackedMixinTransformer
-        UnsafeUtil.unsafeCast(mixinTransformer, HackedMixinTransformer.class);
-
-        LOGGER.info("Unsafe cast Mixin transformer success!");
+        Classes.setClass(mixinTransformer, HackedMixinTransformer.class);
 
         instance = (HackedMixinTransformer) mixinTransformer;
     }

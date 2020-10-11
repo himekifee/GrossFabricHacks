@@ -1,11 +1,8 @@
 package net.fabricmc.loader.launch.knot;
 
 import java.net.URLClassLoader;
-import net.devtech.grossfabrichacks.unsafe.UnsafeUtil;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.game.GameProvider;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import user11681.reflect.Classes;
 
 public class UnsafeKnotClassLoader extends KnotClassLoader {
@@ -13,8 +10,6 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
     public static final URLClassLoader parent;
     public static final ClassLoader dummyClassLoader;
     public static final KnotClassDelegate delegate;
-
-    private static final Logger logger = LogManager.getLogger("GrossFabricHacks/UnsafeKnotClassLoader");
 
     public UnsafeKnotClassLoader(final boolean isDevelopment, final EnvType envType, final GameProvider provider) {
         super(isDevelopment, envType, provider);
@@ -74,8 +69,8 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
         parent = (URLClassLoader) knotClassLoader.getParent();
         dummyClassLoader = parent.getParent();
         delegate = knotClassLoader.getDelegate();
-        instance = UnsafeUtil.unsafeCast(knotClassLoader, UnsafeKnotClassLoader.class);
+        instance = Classes.setClass(knotClassLoader, UnsafeKnotClassLoader.class);
 
-        UnsafeUtil.unsafeCast(delegate, EarlyKnotClassDelegate.class);
+        Classes.setClass(delegate, EarlyKnotClassDelegate.class);
     }
 }
