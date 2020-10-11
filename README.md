@@ -11,6 +11,6 @@ repositories {
 }
 
 dependencies {
-    modApi(include("net.devtech:grossfabrichacks:0.7.4"))
+    modApi(include("net.devtech:grossfabrichacks:7.4"))
 }
 ```
