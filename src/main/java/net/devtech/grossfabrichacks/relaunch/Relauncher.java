@@ -15,18 +15,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.tree.AnnotationNode;
-import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.*;
 import user11681.dynamicentry.DynamicEntry;
 
-import java.io.Closeable;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.ListIterator;
+import java.util.function.Consumer;
 
 public class Relauncher {
 
@@ -53,18 +54,127 @@ public class Relauncher {
                 inMemoryFsField.setAccessible(true);
                 ((Closeable) inMemoryFsField.get(null)).close();
 
-                // look up the classloader hierarchy until we find Launcher$AppClassLoader
-                final String appClassLoaderClassName = "sun.misc.Launcher$AppClassLoader";
-                ClassLoader appClassLoader = FabricLoader.class.getClassLoader();
-                while(!appClassLoader.getClass().getName().equals(appClassLoaderClassName)) {
-                    appClassLoader = appClassLoader.getParent();
+                boolean isJava9OrHigher = !System.getProperty("java.version").startsWith("1.");
+
+                // look up the classloader hierarchy until we find Launcher$ExtClassLoader
+                final String launcherClassName = isJava9OrHigher ? "jdk.internal.loader.ClassLoaders" : "sun.misc.Launcher";
+                final String appClassLoaderClassName = launcherClassName + "$AppClassLoader";
+                final String extClassLoaderClassName = launcherClassName + (isJava9OrHigher ? "$PlatformClassLoader" : "$ExtClassLoader");
+                final String appClassPatcherClassName = "net/devtech/grossfabrichacks/relaunch/AppClassPatcher";
+                ClassLoader extClassLoader = FabricLoader.class.getClassLoader();
+                while(!extClassLoader.getClass().getName().equals(extClassLoaderClassName)) {
+                    extClassLoader = extClassLoader.getParent();
                 }
-                Class<?> appClassLoaderClass = Class.forName(appClassLoaderClassName);
-                Method getAppClassLoader = appClassLoaderClass.getDeclaredMethod("getAppClassLoader", ClassLoader.class);
-                getAppClassLoader.setAccessible(true);
+                Class<?> extClassLoaderClass = Class.forName(extClassLoaderClassName);
+
+                // Make new ExtClassLoader
+                Method getExtClassLoader = extClassLoaderClass.getDeclaredMethod("getExtClassLoader");
+                getExtClassLoader.setAccessible(true);
+                ClassLoader newExtClassLoader = (ClassLoader) getExtClassLoader.invoke(null);
+
+                // Make a new AppClassLoader class
+                Consumer<MethodNode> patchSyntheticCalls = methodNode -> {
+                    if(!isJava9OrHigher) {
+                        // Patch inner class synthetic methods
+                        for (AbstractInsnNode insn : methodNode.instructions) {
+                            if (insn instanceof MethodInsnNode) {
+                                MethodInsnNode mInsn = (MethodInsnNode) insn;
+                                if (mInsn.owner.equals(launcherClassName.replace('.', '/')) && mInsn.name.contains("$")) {
+                                    mInsn.owner = appClassPatcherClassName;
+                                    switch (mInsn.desc) {
+                                        case "()Ljava/net/URLStreamHandlerFactory;": {
+                                            mInsn.name = "getFactory";
+                                            break;
+                                        }
+                                        case "(Ljava/lang/String;)[Ljava/io/File;": {
+                                            mInsn.name = "getClassPath";
+                                            break;
+                                        }
+                                        case "([Ljava/io/File;)[Ljava/net/URL;": {
+                                            mInsn.name = "pathToURLs";
+                                            break;
+                                        }
+                                        case "()Ljava/lang/String;": {
+                                            mInsn.name = "getBootClassPath";
+                                            break;
+                                        }
+                                    }
+                                } else if(mInsn.owner.equals("sun/misc/URLClassPath")) {
+                                    mInsn.setOpcode(Opcodes.INVOKESTATIC);
+                                    mInsn.owner = appClassPatcherClassName;
+                                    switch (mInsn.desc) {
+                                        case "(Ljava/lang/ClassLoader;)V": {
+                                            mInsn.name = "initLookupCache";
+                                            mInsn.desc = "(Lsun/misc/URLClassPath;Ljava/lang/ClassLoader;)V";
+                                            break;
+                                        }
+                                        case "(Ljava/lang/String;)Z": {
+                                            mInsn.name = "knownToNotExist";
+                                            mInsn.desc = "(Lsun/misc/URLClassPath;Ljava/lang/String;)Z";
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+                byte[] appClassLoaderBytecode = getClassBytecode(appClassLoaderClassName, newExtClassLoader);
+                ClassReader appReader = new ClassReader(appClassLoaderBytecode);
+                ClassNode appNode = new ClassNode();
+                appReader.accept(appNode, 0);
+                appNode.methods.forEach(methodNode -> {
+                    if(methodNode.name.equals("loadClass")) {
+                        // find original first node
+                        LabelNode origHead = null;
+                        ListIterator<AbstractInsnNode> origInsns = methodNode.instructions.iterator();
+                        while(origInsns.hasNext()) {
+                            AbstractInsnNode node = origInsns.next();
+                            if(node instanceof LabelNode) {
+                                origHead = (LabelNode) node;
+                                // we use an extra local for our injection, so we need to chop it off
+                                origInsns.add(new FrameNode(Opcodes.F_CHOP, 0, new String[] {"Ljava/lang/Class;"}, 0, new String[0]));
+                                break;
+                            }
+                        }
+                        ArrayList<AbstractInsnNode> insns = new ArrayList<>();
+                        insns.add(new LabelNode());
+                        insns.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                        insns.add(new VarInsnNode(Opcodes.ILOAD, 2));
+                        insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, appClassPatcherClassName, "patchClass", "(Ljava/lang/String;Z)Ljava/lang/Class;"));
+                        insns.add(new VarInsnNode(Opcodes.ASTORE, 3));
+                        insns.add(new VarInsnNode(Opcodes.ALOAD, 3));
+                        insns.add(new JumpInsnNode(Opcodes.IFNULL, origHead));
+                        insns.add(new VarInsnNode(Opcodes.ALOAD, 3));
+                        insns.add(new InsnNode(Opcodes.ARETURN));
+                        InsnList insnsList = new InsnList();
+                        insns.forEach(insnsList::add);
+                        methodNode.instructions.insert(insnsList);
+                    }
+                    patchSyntheticCalls.accept(methodNode);
+                });
+                ClassWriter appWriter = new ClassWriter(0);
+                appNode.accept(appWriter);
+                Class<?> newAppClass = defineClass(appClassLoaderClassName, appWriter.toByteArray(), newExtClassLoader);
+
+                // Redefine AppClassLoader$1
+                byte[] appClassLoader1Bytecode = getClassBytecode(appClassLoaderClassName + "$1", newExtClassLoader);
+                ClassReader app1Reader = new ClassReader(appClassLoader1Bytecode);
+                ClassNode app1Node = new ClassNode();
+                app1Reader.accept(app1Node, 0);
+                ClassWriter app1Writer = new ClassWriter(0);
+                app1Node.methods.forEach(patchSyntheticCalls);
+                app1Node.accept(app1Writer);
+                defineClass(appClassLoaderClassName + "$1", app1Writer.toByteArray(), newExtClassLoader);
+
+                // Define AppClassPatcher
+                byte[] appClassPatcherBytecode = getClassBytecode(appClassPatcherClassName, Relauncher.class.getClassLoader());
+                defineClass(appClassPatcherClassName, appClassPatcherBytecode, newExtClassLoader);
 
                 // Make new AppClassLoader
-                ClassLoader newAppClassLoader = (ClassLoader) getAppClassLoader.invoke(null, appClassLoader.getParent());
+                Method getAppClassLoader = newAppClass.getDeclaredMethod("getAppClassLoader", ClassLoader.class);
+                getAppClassLoader.setAccessible(true);
+                ClassLoader newAppClassLoader = (ClassLoader) getAppClassLoader.invoke(null, extClassLoader);
                 Thread.currentThread().setContextClassLoader(newAppClassLoader);
 
                 // execute entrypoints
@@ -119,6 +229,23 @@ public class Relauncher {
 
     private static Class<?> defineClass(String name, byte[] bytecode, ClassLoader classLoader) {
         return Unsafe.defineClass(name, bytecode, 0, bytecode.length, classLoader, GrossFabricHacks.class.getProtectionDomain());
+    }
+
+    private static byte[] getClassBytecode(String name, ClassLoader source) throws IOException, ClassNotFoundException {
+        InputStream inputStream = source.getResourceAsStream(name.replace('.', '/') + ".class");
+        if (inputStream == null) {
+            throw new ClassNotFoundException();
+        } else {
+            int a = inputStream.available();
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream(Math.max(a, 32));
+            byte[] buffer = new byte[8192];
+            int len;
+            while((len = inputStream.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, len);
+            }
+            inputStream.close();
+            return outputStream.toByteArray();
+        }
     }
 
 }
