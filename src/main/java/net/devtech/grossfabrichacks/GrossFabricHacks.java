@@ -3,7 +3,7 @@ package net.devtech.grossfabrichacks;
 import java.io.*;
 
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
-import net.devtech.grossfabrichacks.relaunch.Relauncher;
+import net.devtech.grossfabrichacks.relaunch.SameProcessRelauncher;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.devtech.grossfabrichacks.unsafe.UnsafeUtil;
@@ -67,7 +67,7 @@ public class GrossFabricHacks implements LanguageAdapter {
     }
 
     static {
-        Relauncher.relaunchIfNeeded();
+        SameProcessRelauncher.relaunchIfNeeded();
 
         LOGGER.info("no good? no, this man is definitely up to evil.");
         try {
