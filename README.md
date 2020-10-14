@@ -1,5 +1,5 @@
 # GrossFabricHacks
-a fork for until HalfOf2 should release a new version
+A series of hacks and utilities
 
 How to use
 ---
@@ -7,14 +7,10 @@ https://github.com/Devan-Kerman/GrossFabricHacks/wiki
 
 ```groovy
 repositories {
-    . . .
-    maven {
-        url "https://jitpack.io"
-    }
+    maven {url = "https://dl.bintray.com/user11681/maven"}
 }
 
 dependencies {
-    . . .
-    modApi include("com.github.user11681:GrossFabricHacks:-SNAPSHOT")
+    modApi(include("net.devtech:grossfabrichacks:7.4"))
 }
 ```

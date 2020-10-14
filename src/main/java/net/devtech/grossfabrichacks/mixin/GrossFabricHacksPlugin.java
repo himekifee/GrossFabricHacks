@@ -39,11 +39,11 @@ public class GrossFabricHacksPlugin implements IMixinConfigPlugin {
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
 
     static {
-        GrossFabricHacks.State.mixinLoaded = true;
+        GrossFabricHacks.Common.mixinLoaded = true;
 
-        DynamicEntry.executeOptionalEntrypoint("gfh:prePreLaunch", PrePreLaunch.class, PrePreLaunch::onPrePreLaunch);
+        DynamicEntry.maybeExecute("gfh:prePreLaunch", PrePreLaunch.class, PrePreLaunch::onPrePreLaunch);
 
-        if (GrossFabricHacks.State.shouldWrite || GrossFabricHacks.State.manualLoad) {
+        if (GrossFabricHacks.Common.shouldWrite || GrossFabricHacks.Common.manualLoad) {
             TransformerApi.manualLoad();
         }
     }

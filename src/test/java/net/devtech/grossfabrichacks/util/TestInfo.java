@@ -1,4 +1,4 @@
-package net.devtech.grossfabrichacks;
+package net.devtech.grossfabrichacks.util;
 
 public class TestInfo {
     public final String format;

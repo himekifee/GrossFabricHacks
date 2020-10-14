@@ -9,25 +9,15 @@ import java.util.Set;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.TransformerApi;
-import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
+import net.devtech.grossfabrichacks.transformer.asm.AsmInstrumentationTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
-import net.fabricmc.loader.api.FabricLoader;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
 public class InstrumentationApi {
-    private static final Set<String> TRANSFORMABLE = new HashSet<>();
-    private static final Logger LOGGER = LogManager.getLogger("GrossFabricHacks/InstrumentationApi");
+    private static final Set<String> transformable = new HashSet<>();
 
-    public static Instrumentation instrumentation;
-
-    public static void agentmain(String argument, Instrumentation instrumentation) {
-        InstrumentationApi.instrumentation = instrumentation;
-
-        LOGGER.info("test");
-    }
+    public static final Instrumentation instrumentation;
 
     /**
      * adds a transformer that pipes a class through TransformerBootstrap,
@@ -39,19 +29,20 @@ public class InstrumentationApi {
      * @param cls the internal name of the class
      */
     public static void pipeClassThroughTransformerBootstrap(String cls) {
-        TRANSFORMABLE.add(cls);
+        transformable.add(cls);
+
         Transformable.init();
     }
 
     /**
-     * a convenience method for {@link InstrumentationApi#retransform(Class, AsmClassTransformer)}
+     * a convenience method for {@link InstrumentationApi#retransform(Class, AsmInstrumentationTransformer)}
      * intended to be used when the target class is not visible
      *
      * @param cls         the binary name (defined in the last section of the {@linkplain ClassLoader ClassLoader javadoc}
      *                    of the class to retransform
      * @param transformer the class transformer
      */
-    public static void retransform(final String cls, final AsmClassTransformer transformer) {
+    public static void retransform(final String cls, final AsmInstrumentationTransformer transformer) {
         try {
             retransform(Class.forName(cls), transformer);
         } catch (final ClassNotFoundException exception) {
@@ -59,7 +50,7 @@ public class InstrumentationApi {
         }
     }
 
-    public static void retransform(Class<?> cls, AsmClassTransformer transformer) {
+    public static void retransform(Class<?> cls, AsmInstrumentationTransformer transformer) {
         retransform(cls, transformer.asRaw());
     }
 
@@ -105,6 +96,56 @@ public class InstrumentationApi {
         }
     }
 
+    public static ClassNode[] getNodes(final Class<?>... classes) {
+        final int classCount = classes.length;
+        final ClassNode[] nodes = new ClassNode[classCount];
+        final byte[][] bytes = getBytecode(classes);
+
+        for (int i = 0; i < classCount; i++) {
+            new ClassReader(bytes[i]).accept(nodes[i] = new ClassNode(), 0);
+        }
+
+        return nodes;
+    }
+
+    public static ClassNode getNode(final Class<?> klass) {
+        final ClassNode node = new ClassNode();
+
+        new ClassReader(getBytecode(klass)).accept(node, 0);
+
+        return node;
+    }
+
+    public static byte[][] getBytecode(final Class<?>... classes) {
+        final RetainingDummyTransformer transformer = new RetainingDummyTransformer(classes);
+
+        instrumentation.addTransformer(transformer);
+
+        try {
+            instrumentation.retransformClasses(classes);
+        } catch (final UnmodifiableClassException exception) {
+            throw new RuntimeException(exception);
+        }
+
+        return transformer.bytecode;
+    }
+
+    public static byte[] getBytecode(final Class<?> klass) {
+        final RetainingDummyTransformer transformer = new RetainingDummyTransformer(klass);
+
+        instrumentation.addTransformer(transformer);
+
+        try {
+            instrumentation.retransformClasses(klass);
+        } catch (final UnmodifiableClassException exception) {
+            throw new RuntimeException(exception);
+        }
+
+        instrumentation.removeTransformer(transformer);
+
+        return transformer.bytecode[0];
+    }
+
     // to seperate out the static block
     private static class Transformable {
         private static boolean init;
@@ -113,8 +154,8 @@ public class InstrumentationApi {
             ClassNode node = new ClassNode();
             reader.accept(node, 0);
 
-            if (TRANSFORMABLE.remove(node.name)) {
-                if (TRANSFORMABLE.isEmpty()) {
+            if (transformable.remove(node.name)) {
+                if (transformable.isEmpty()) {
                     deinit();
                 }
 
@@ -143,30 +184,15 @@ public class InstrumentationApi {
     }
 
     static {
-        final String name = ManagementFactory.getRuntimeMXBean().getName();
-        final String PID = name.substring(0, name.indexOf('@'));
-        final String source = GrossFabricHacks.class.getProtectionDomain().getCodeSource().getLocation().getFile();
+        if (InstrumentationAgent.instrumentation == null) {
+            final File agent = GrossFabricHacks.Common.getAgent();
+            final String name = ManagementFactory.getRuntimeMXBean().getName();
 
-        LOGGER.info("Attaching instrumentation agent to VM.");
+            ByteBuddyAgent.attach(agent, name.substring(0, name.indexOf('@')));
 
-        if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
-            File agent = new File(source, "jars/gross_agent.jar");
-            if(!agent.exists()) {
-                agent = new File(source, "../../../resources/main/jars/gross_agent.jar");
-            }
-            ByteBuddyAgent.attach(agent, PID);
-
-            try {
-                instrumentation = (Instrumentation) Class.forName("gross.agent.InstrumentationAgent").getDeclaredField("instrumentation").get(null);
-            } catch (final Throwable throwable) {
-                throw new RuntimeException(throwable);
-            }
-        } else {
-            LOGGER.info(ByteBuddyAgent.class);
-
-            ByteBuddyAgent.attach(new File(source), PID);
+            agent.delete();
         }
 
-        LOGGER.info("Successfully attached instrumentation agent.");
+        instrumentation = InstrumentationAgent.instrumentation;
     }
 }
