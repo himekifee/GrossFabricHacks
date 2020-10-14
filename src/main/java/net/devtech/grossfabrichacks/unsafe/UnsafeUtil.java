@@ -155,7 +155,7 @@ public class UnsafeUtil {
         try {
             Unsafe.putInt(object, Unsafe.objectFieldOffset(object.getClass().getDeclaredField(field)), value);
         } catch (final NoSuchFieldException exception) {
-            throw new RuntimeException(exception);
+            throw Unsafe.throwException(exception);
         }
     }
 
@@ -163,7 +163,7 @@ public class UnsafeUtil {
         try {
             Unsafe.putInt(object, Unsafe.objectFieldOffset(klass.getDeclaredField(field)), value);
         } catch (final NoSuchFieldException exception) {
-            throw new RuntimeException(exception);
+            throw Unsafe.throwException(exception);
         }
     }
 
@@ -195,9 +195,7 @@ public class UnsafeUtil {
         return defineAndInitialize(binaryName, klass, loader, null);
     }
 
-    public static <T> Class<T> defineAndInitialize(
-        final String binaryName, final byte[] bytecode,
-        final ClassLoader loader, final ProtectionDomain protectionDomain) {
+    public static <T> Class<T> defineAndInitialize(final String binaryName, final byte[] bytecode, final ClassLoader loader, final ProtectionDomain protectionDomain) {
         final Class<?> klass;
 
         Unsafe.ensureClassInitialized(klass = Unsafe.defineClass(binaryName, bytecode, 0, bytecode.length, loader, protectionDomain));
@@ -231,7 +229,7 @@ public class UnsafeUtil {
         try {
             return IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream(binaryName.replace('.', '/') + ".class"));
         } catch (final IOException exception) {
-            throw new RuntimeException(exception);
+            throw Unsafe.throwException(exception);
         }
     }
 

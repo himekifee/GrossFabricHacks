@@ -8,6 +8,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.game.GameProvider;
 import net.fabricmc.loader.transformer.FabricTransformer;
+import net.gudenau.lib.unsafe.Unsafe;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -43,7 +44,7 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
         try {
             return (boolean) canTransformClass.invokeExact(klass);
         } catch (final Throwable throwable) {
-            throw new RuntimeException(throwable);
+            throw Unsafe.throwException(throwable);
         }
     }
 
@@ -67,7 +68,7 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
 
             return bytecode;
         } catch (final IOException exception) {
-            throw new RuntimeException(exception);
+            throw Unsafe.throwException(exception);
         }
     }
 
@@ -104,7 +105,7 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
 
             return null;
         } catch (final IOException exception) {
-            throw new RuntimeException(String.format("Failed to load class file for \"%s\"", name), exception);
+            throw Unsafe.throwException(exception);
         }
     }
 

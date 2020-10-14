@@ -11,6 +11,7 @@ import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.devtech.grossfabrichacks.transformer.asm.AsmInstrumentationTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
+import net.gudenau.lib.unsafe.Unsafe;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -46,7 +47,7 @@ public class InstrumentationApi {
         try {
             retransform(Class.forName(cls), transformer);
         } catch (final ClassNotFoundException exception) {
-            throw new RuntimeException(exception);
+            throw Unsafe.throwException(exception);
         }
     }
 
@@ -67,7 +68,7 @@ public class InstrumentationApi {
         try {
             retransform(Class.forName(cls), transformer);
         } catch (final ClassNotFoundException exception) {
-            throw new RuntimeException(exception);
+            throw Unsafe.throwException(exception);
         }
     }
 
@@ -92,7 +93,7 @@ public class InstrumentationApi {
             instrumentation.retransformClasses(cls);
             instrumentation.removeTransformer(fileTransformer);
         } catch (UnmodifiableClassException e) {
-            throw new RuntimeException(e);
+            throw Unsafe.throwException(e);
         }
     }
 
@@ -124,7 +125,7 @@ public class InstrumentationApi {
         try {
             instrumentation.retransformClasses(classes);
         } catch (final UnmodifiableClassException exception) {
-            throw new RuntimeException(exception);
+            throw Unsafe.throwException(exception);
         }
 
         return transformer.bytecode;
@@ -138,7 +139,7 @@ public class InstrumentationApi {
         try {
             instrumentation.retransformClasses(klass);
         } catch (final UnmodifiableClassException exception) {
-            throw new RuntimeException(exception);
+            throw Unsafe.throwException(exception);
         }
 
         instrumentation.removeTransformer(transformer);
