@@ -1,5 +1,6 @@
 package net.devtech.grossfabrichacks;
 
+import net.devtech.grossfabrichacks.instrumentation.InstrumentationApi;
 import net.gudenau.lib.unsafe.Unsafe;
 import net.minecraft.block.Block;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,11 @@ class GFHTest {
     static final int iterations = 5000;
 
     @Test
+    void instrumentation() {
+        InstrumentationApi.instrumentation.getAllLoadedClasses();
+    }
+
+    @Test
     void test() throws Throwable {
         final Object[] objects = {new GFHTest(), Unsafe.allocateInstance(Block.class)};
         final int offset = Unsafe.arrayBaseOffset(objects.getClass());
@@ -22,5 +28,9 @@ class GFHTest {
 
         System.out.println(Long.toHexString(address0));
         System.out.println(Long.toHexString(address1));
+    }
+
+    static {
+        System.setProperty("fabric.development", "true");
     }
 }

@@ -16,10 +16,10 @@ public class TransformerApi {
 	 * manually load the class, causing it to inject itself into the class loading pipe.
 	 */
 	public static void manualLoad() {
-		if (GrossFabricHacks.State.mixinLoaded) {
+		if (GrossFabricHacks.Common.mixinLoaded) {
 			Classes.load(Classes.systemClassLoader, "org.spongepowered.asm.mixin.transformer.HackedMixinTransformer");
 		} else {
-			GrossFabricHacks.State.manualLoad = true;
+			GrossFabricHacks.Common.manualLoad = true;
 		}
 	}
 
@@ -27,11 +27,11 @@ public class TransformerApi {
 	 * listeners are called before mixins are applied, and gives you raw access to the class' bytecode, allowing you to fiddle with things ASM normally doens't let you.
 	 */
 	public static void registerPreMixinRawClassTransformer(RawClassTransformer transformer) {
-		if (GrossFabricHacks.State.preMixinRawClassTransformer == null) {
-			GrossFabricHacks.State.preMixinRawClassTransformer = transformer;
-			GrossFabricHacks.State.transformPreMixinRawClass = true;
+		if (GrossFabricHacks.Common.preMixinRawClassTransformer == null) {
+			GrossFabricHacks.Common.preMixinRawClassTransformer = transformer;
+			GrossFabricHacks.Common.transformPreMixinRawClass = true;
 		} else {
-			GrossFabricHacks.State.preMixinRawClassTransformer = GrossFabricHacks.State.preMixinRawClassTransformer.andThen(transformer);
+			GrossFabricHacks.Common.preMixinRawClassTransformer = GrossFabricHacks.Common.preMixinRawClassTransformer.andThen(transformer);
 		}
 	}
 
@@ -39,12 +39,12 @@ public class TransformerApi {
 	 * transformers are called before mixin application with the class' classnode
 	 */
 	public static void registerPreMixinAsmClassTransformer(AsmClassTransformer transformer) {
-		if (GrossFabricHacks.State.preMixinAsmClassTransformer == null) {
-			GrossFabricHacks.State.preMixinAsmClassTransformer = transformer;
-			GrossFabricHacks.State.transformPreMixinAsmClass = true;
-			GrossFabricHacks.State.shouldWrite = true;
+		if (GrossFabricHacks.Common.preMixinAsmClassTransformer == null) {
+			GrossFabricHacks.Common.preMixinAsmClassTransformer = transformer;
+			GrossFabricHacks.Common.transformPreMixinAsmClass = true;
+			GrossFabricHacks.Common.shouldWrite = true;
 		} else {
-			GrossFabricHacks.State.preMixinAsmClassTransformer = GrossFabricHacks.State.preMixinAsmClassTransformer.andThen(transformer);
+			GrossFabricHacks.Common.preMixinAsmClassTransformer = GrossFabricHacks.Common.preMixinAsmClassTransformer.andThen(transformer);
 		}
 	}
 
@@ -52,12 +52,12 @@ public class TransformerApi {
 	 * these are the last transformers to be called, and are fed the output of the classwritten classnode after mixin and postmixinasmtransformers.
 	 */
 	public static void registerPostMixinRawClassTransformer(RawClassTransformer transformer) {
-		if (GrossFabricHacks.State.postMixinRawClassTransformer == null) {
-			GrossFabricHacks.State.postMixinRawClassTransformer = transformer;
-			GrossFabricHacks.State.transformPostMixinRawClass = true;
-			GrossFabricHacks.State.shouldWrite = true;
+		if (GrossFabricHacks.Common.postMixinRawClassTransformer == null) {
+			GrossFabricHacks.Common.postMixinRawClassTransformer = transformer;
+			GrossFabricHacks.Common.transformPostMixinRawClass = true;
+			GrossFabricHacks.Common.shouldWrite = true;
 		} else {
-			GrossFabricHacks.State.postMixinRawClassTransformer = GrossFabricHacks.State.postMixinRawClassTransformer.andThen(transformer);
+			GrossFabricHacks.Common.postMixinRawClassTransformer = GrossFabricHacks.Common.postMixinRawClassTransformer.andThen(transformer);
 		}
 	}
 
@@ -65,12 +65,12 @@ public class TransformerApi {
 	 * transformer is called right after mixin application.
 	 */
 	public static void registerPostMixinAsmClassTransformer(AsmClassTransformer transformer) {
-		if (GrossFabricHacks.State.postMixinAsmClassTransformer == null) {
-			GrossFabricHacks.State.postMixinAsmClassTransformer = transformer;
-			GrossFabricHacks.State.transformPostMixinAsmClass = true;
-			GrossFabricHacks.State.shouldWrite = true;
+		if (GrossFabricHacks.Common.postMixinAsmClassTransformer == null) {
+			GrossFabricHacks.Common.postMixinAsmClassTransformer = transformer;
+			GrossFabricHacks.Common.transformPostMixinAsmClass = true;
+			GrossFabricHacks.Common.shouldWrite = true;
 		} else {
-			GrossFabricHacks.State.postMixinAsmClassTransformer = GrossFabricHacks.State.postMixinAsmClassTransformer.andThen(transformer);
+			GrossFabricHacks.Common.postMixinAsmClassTransformer = GrossFabricHacks.Common.postMixinAsmClassTransformer.andThen(transformer);
 		}
 	}
 

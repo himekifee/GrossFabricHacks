@@ -51,16 +51,16 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
         try {
             byte[] bytecode = this.getRawClassByteArray(name, skipOriginalLoader);
 
-            if (GrossFabricHacks.State.transformPreMixinRawClass) {
-                bytecode = GrossFabricHacks.State.preMixinRawClassTransformer.transform(name, bytecode);
+            if (GrossFabricHacks.Common.transformPreMixinRawClass) {
+                bytecode = GrossFabricHacks.Common.preMixinRawClassTransformer.transform(name, bytecode);
             }
 
-            if (GrossFabricHacks.State.transformPreMixinAsmClass) {
+            if (GrossFabricHacks.Common.transformPreMixinAsmClass) {
                 final ClassNode node = new ClassNode();
 
                 new ClassReader(bytecode).accept(node, 0);
 
-                GrossFabricHacks.State.preMixinAsmClassTransformer.transform(node);
+                GrossFabricHacks.Common.preMixinAsmClassTransformer.transform(node);
 
                 return node;
             }
@@ -81,7 +81,7 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
             }
 
             if (!transformInitialized) {
-                if (GrossFabricHacks.State.transformPreMixinAsmClass) {
+                if (GrossFabricHacks.Common.transformPreMixinAsmClass) {
                     final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 
                     ((ClassNode) this.processClass(name, skipOriginalLoader)).accept(writer);
@@ -115,19 +115,19 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
         }
 
         if (!transformInitialized) {
-            if (GrossFabricHacks.State.transformPreMixinAsmClass) {
+            if (GrossFabricHacks.Common.transformPreMixinAsmClass) {
                 final ClassNode node = (ClassNode) processClass(name, true);
 
-                if (GrossFabricHacks.State.transformPostMixinAsmClass) {
-                    GrossFabricHacks.State.postMixinAsmClassTransformer.transform(node);
+                if (GrossFabricHacks.Common.transformPostMixinAsmClass) {
+                    GrossFabricHacks.Common.postMixinAsmClassTransformer.transform(node);
                 }
 
                 final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 
                 node.accept(writer);
 
-                if (GrossFabricHacks.State.transformPostMixinRawClass) {
-                    return GrossFabricHacks.State.postMixinRawClassTransformer.transform(name.replace('.', '/'), writer.toByteArray());
+                if (GrossFabricHacks.Common.transformPostMixinRawClass) {
+                    return GrossFabricHacks.Common.postMixinRawClassTransformer.transform(name.replace('.', '/'), writer.toByteArray());
                 }
 
                 return writer.toByteArray();

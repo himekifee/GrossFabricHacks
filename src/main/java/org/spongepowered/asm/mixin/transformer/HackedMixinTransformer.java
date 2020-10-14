@@ -19,8 +19,8 @@ public class HackedMixinTransformer extends MixinTransformer {
     @Override
     public byte[] transformClass(final MixinEnvironment environment, final String name, byte[] classBytes) {
         // raw class patching
-        if (GrossFabricHacks.State.transformPreMixinRawClass) {
-            classBytes = GrossFabricHacks.State.preMixinRawClassTransformer.transform(name, classBytes);
+        if (GrossFabricHacks.Common.transformPreMixinRawClass) {
+            classBytes = GrossFabricHacks.Common.preMixinRawClassTransformer.transform(name, classBytes);
         }
 
         // ASM patching
@@ -30,20 +30,20 @@ public class HackedMixinTransformer extends MixinTransformer {
     public byte[] transform(MixinEnvironment environment, ClassNode classNode, byte[] original) {
         final String name = classNode.name;
 
-        if (GrossFabricHacks.State.shouldWrite) {
-            if (GrossFabricHacks.State.transformPreMixinAsmClass) {
-                GrossFabricHacks.State.preMixinAsmClassTransformer.transform(classNode);
+        if (GrossFabricHacks.Common.shouldWrite) {
+            if (GrossFabricHacks.Common.transformPreMixinAsmClass) {
+                GrossFabricHacks.Common.preMixinAsmClassTransformer.transform(classNode);
             }
 
             processor.applyMixins(environment, name.replace('/', '.'), classNode);
 
-            if (GrossFabricHacks.State.transformPostMixinAsmClass) {
-                GrossFabricHacks.State.postMixinAsmClassTransformer.transform(classNode);
+            if (GrossFabricHacks.Common.transformPostMixinAsmClass) {
+                GrossFabricHacks.Common.postMixinAsmClassTransformer.transform(classNode);
             }
 
             // post mixin raw patching
-            if (GrossFabricHacks.State.transformPostMixinRawClass) {
-                return GrossFabricHacks.State.postMixinRawClassTransformer.transform(name, this.writeClass(classNode));
+            if (GrossFabricHacks.Common.transformPostMixinRawClass) {
+                return GrossFabricHacks.Common.postMixinRawClassTransformer.transform(name, this.writeClass(classNode));
             }
 
             return this.writeClass(classNode);

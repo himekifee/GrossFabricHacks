@@ -26,37 +26,10 @@ public class GrossFabricHacks implements LanguageAdapter {
     @Override
     public native <T> T create(ModContainer mod, String value, Class<T> type);
 
-    public static File getAgent() {
-        final String source = GrossFabricHacks.class.getProtectionDomain().getCodeSource().getLocation().getFile();
-
-        if (source.endsWith(".jar")) {
-            return new File(source);
-        }
-
-        final File agent = new File(System.getProperty("user.home"), "gross_agent.jar");
-
-        if (!agent.exists()) {
-            try {
-                final JarOutputStream agentJar = new JarOutputStream(new FileOutputStream(agent), new Manifest(new FileInputStream(new File(source, "/META-INF/MANIFEST.MF"))));
-                final String agentPath = "net/devtech/grossfabrichacks/instrumentation/InstrumentationAgent.class";
-
-                agentJar.putNextEntry(new ZipEntry(agentPath));
-
-                IOUtils.write(IOUtils.toByteArray(GrossFabricHacks.class.getResourceAsStream("/" + agentPath)), agentJar);
-
-                agentJar.close();
-            } catch (final IOException exception) {
-                throw new UncheckedIOException(exception);
-            }
-        }
-
-        return agent;
-    }
-
     /**
-     * Intended to be loaded by the system class loader so that classes loaded by different class loaders may share information.
+     * This class is intended to be loaded by the system class loader so that classes loaded by different class loaders may share information.
      */
-    public static class State {
+    public static class Common {
         public static boolean mixinLoaded;
         public static boolean manualLoad;
 
@@ -69,6 +42,33 @@ public class GrossFabricHacks implements LanguageAdapter {
         public static RawClassTransformer postMixinRawClassTransformer;
         public static AsmClassTransformer preMixinAsmClassTransformer;
         public static AsmClassTransformer postMixinAsmClassTransformer;
+
+        public static File getAgent() {
+            final String source = GrossFabricHacks.class.getProtectionDomain().getCodeSource().getLocation().getFile();
+
+            if (source.endsWith(".jar")) {
+                return new File(source);
+            }
+
+            final File agent = new File(System.getProperty("user.home"), "gross_agent.jar");
+
+            if (!agent.exists()) {
+                try {
+                    final JarOutputStream agentJar = new JarOutputStream(new FileOutputStream(agent), new Manifest(new FileInputStream(new File(source, "/META-INF/MANIFEST.MF"))));
+                    final String agentPath = "net/devtech/grossfabrichacks/instrumentation/InstrumentationAgent.class";
+
+                    agentJar.putNextEntry(new ZipEntry(agentPath));
+
+                    IOUtils.write(IOUtils.toByteArray(GrossFabricHacks.class.getResourceAsStream("/" + agentPath)), agentJar);
+
+                    agentJar.close();
+                } catch (final IOException exception) {
+                    throw new UncheckedIOException(exception);
+                }
+            }
+
+            return agent;
+        }
     }
 
     static {
@@ -91,7 +91,7 @@ public class GrossFabricHacks implements LanguageAdapter {
 
         Classes.addURL(Classes.systemClassLoader, GrossFabricHacks.class.getProtectionDomain().getCodeSource().getLocation());
         Classes.load(Classes.systemClassLoader,
-            "net.devtech.grossfabrichacks.GrossFabricHacks$State",
+            "net.devtech.grossfabrichacks.GrossFabricHacks$Common",
             "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",
             "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
             "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader"
