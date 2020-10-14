@@ -150,7 +150,11 @@ public class InstrumentationApi {
         LOGGER.info("Attaching instrumentation agent to VM.");
 
         if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
-            ByteBuddyAgent.attach(new File(source, "jars/gross_agent.jar"), PID);
+            File agent = new File(source, "jars/gross_agent.jar");
+            if(!agent.exists()) {
+                agent = new File(source, "../../../resources/main/jars/gross_agent.jar");
+            }
+            ByteBuddyAgent.attach(agent, PID);
 
             try {
                 instrumentation = (Instrumentation) Class.forName("gross.agent.InstrumentationAgent").getDeclaredField("instrumentation").get(null);

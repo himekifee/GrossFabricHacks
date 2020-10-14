@@ -3,6 +3,7 @@ package net.devtech.grossfabrichacks.relaunch;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePrePreLaunch;
+import net.devtech.grossfabrichacks.instrumentation.InstrumentationApi;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.discovery.ModResolver;
@@ -18,12 +19,15 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 import user11681.dynamicentry.DynamicEntry;
+import user11681.reflect.Invoker;
 
 import java.io.*;
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.instrument.ClassDefinition;
+import java.lang.instrument.UnmodifiableClassException;
+import java.lang.invoke.MethodHandle;
+import java.lang.reflect.*;
+import java.net.URL;
+import java.security.AccessControlContext;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.ListIterator;
@@ -60,7 +64,7 @@ public class Relauncher {
                 final String launcherClassName = isJava9OrHigher ? "jdk.internal.loader.ClassLoaders" : "sun.misc.Launcher";
                 final String appClassLoaderClassName = launcherClassName + "$AppClassLoader";
                 final String extClassLoaderClassName = launcherClassName + (isJava9OrHigher ? "$PlatformClassLoader" : "$ExtClassLoader");
-                final String appClassPatcherClassName = "net/devtech/grossfabrichacks/relaunch/AppClassPatcher";
+                final String gfhPatcherClassName = "jdk/internal/loader/GrossFabricHacksPatcher";
                 ClassLoader extClassLoader = FabricLoader.class.getClassLoader();
                 while(!extClassLoader.getClass().getName().equals(extClassLoaderClassName)) {
                     extClassLoader = extClassLoader.getParent();
@@ -68,9 +72,17 @@ public class Relauncher {
                 Class<?> extClassLoaderClass = Class.forName(extClassLoaderClassName);
 
                 // Make new ExtClassLoader
-                Method getExtClassLoader = extClassLoaderClass.getDeclaredMethod("getExtClassLoader");
-                getExtClassLoader.setAccessible(true);
-                ClassLoader newExtClassLoader = (ClassLoader) getExtClassLoader.invoke(null);
+                ClassLoader newExtClassLoader;
+                if(!isJava9OrHigher) {
+                    Method getExtClassLoader = extClassLoaderClass.getDeclaredMethod("getExtClassLoader");
+                    newExtClassLoader = (ClassLoader) Invoker.unreflect(getExtClassLoader).invoke();
+                } else {
+                    Class<?> launcherClass = Class.forName(launcherClassName);
+                    Method bootLoaderMethod = launcherClass.getDeclaredMethod("bootLoader");
+                    ClassLoader bootLoader = (ClassLoader) Invoker.unreflect(bootLoaderMethod).invoke();
+                    Constructor<?> platformCtor = extClassLoaderClass.getDeclaredConstructor(bootLoader.getClass());
+                    newExtClassLoader = (ClassLoader) Invoker.unreflectConstructor(platformCtor).invoke(bootLoader);
+                }
 
                 // Make a new AppClassLoader class
                 Consumer<MethodNode> patchSyntheticCalls = methodNode -> {
@@ -80,7 +92,7 @@ public class Relauncher {
                             if (insn instanceof MethodInsnNode) {
                                 MethodInsnNode mInsn = (MethodInsnNode) insn;
                                 if (mInsn.owner.equals(launcherClassName.replace('.', '/')) && mInsn.name.contains("$")) {
-                                    mInsn.owner = appClassPatcherClassName;
+                                    mInsn.owner = gfhPatcherClassName;
                                     switch (mInsn.desc) {
                                         case "()Ljava/net/URLStreamHandlerFactory;": {
                                             mInsn.name = "getFactory";
@@ -101,7 +113,7 @@ public class Relauncher {
                                     }
                                 } else if(mInsn.owner.equals("sun/misc/URLClassPath")) {
                                     mInsn.setOpcode(Opcodes.INVOKESTATIC);
-                                    mInsn.owner = appClassPatcherClassName;
+                                    mInsn.owner = gfhPatcherClassName;
                                     switch (mInsn.desc) {
                                         case "(Ljava/lang/ClassLoader;)V": {
                                             mInsn.name = "initLookupCache";
@@ -141,7 +153,7 @@ public class Relauncher {
                         insns.add(new LabelNode());
                         insns.add(new VarInsnNode(Opcodes.ALOAD, 1));
                         insns.add(new VarInsnNode(Opcodes.ILOAD, 2));
-                        insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, appClassPatcherClassName, "patchClass", "(Ljava/lang/String;Z)Ljava/lang/Class;"));
+                        insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, gfhPatcherClassName, "patchClass", "(Ljava/lang/String;Z)Ljava/lang/Class;"));
                         insns.add(new VarInsnNode(Opcodes.ASTORE, 3));
                         insns.add(new VarInsnNode(Opcodes.ALOAD, 3));
                         insns.add(new JumpInsnNode(Opcodes.IFNULL, origHead));
@@ -155,27 +167,54 @@ public class Relauncher {
                 });
                 ClassWriter appWriter = new ClassWriter(0);
                 appNode.accept(appWriter);
-                Class<?> newAppClass = defineClass(appClassLoaderClassName, appWriter.toByteArray(), newExtClassLoader);
+                Class<?> newAppClass = null;
+                if(!isJava9OrHigher) {
+                    newAppClass = defineClass(appClassLoaderClassName, appWriter.toByteArray(), newExtClassLoader);
+                }
 
-                // Redefine AppClassLoader$1
-                byte[] appClassLoader1Bytecode = getClassBytecode(appClassLoaderClassName + "$1", newExtClassLoader);
-                ClassReader app1Reader = new ClassReader(appClassLoader1Bytecode);
-                ClassNode app1Node = new ClassNode();
-                app1Reader.accept(app1Node, 0);
-                ClassWriter app1Writer = new ClassWriter(0);
-                app1Node.methods.forEach(patchSyntheticCalls);
-                app1Node.accept(app1Writer);
-                defineClass(appClassLoaderClassName + "$1", app1Writer.toByteArray(), newExtClassLoader);
+                if(!isJava9OrHigher) {
+                    // Redefine AppClassLoader$1
+                    byte[] appClassLoader1Bytecode = getClassBytecode(appClassLoaderClassName + "$1", newExtClassLoader);
+                    ClassReader app1Reader = new ClassReader(appClassLoader1Bytecode);
+                    ClassNode app1Node = new ClassNode();
+                    app1Reader.accept(app1Node, 0);
+                    ClassWriter app1Writer = new ClassWriter(0);
+                    app1Node.methods.forEach(patchSyntheticCalls);
+                    app1Node.accept(app1Writer);
+                    defineClass(appClassLoaderClassName + "$1", app1Writer.toByteArray(), newExtClassLoader);
+                }
 
                 // Define AppClassPatcher
-                byte[] appClassPatcherBytecode = getClassBytecode(appClassPatcherClassName, Relauncher.class.getClassLoader());
-                defineClass(appClassPatcherClassName, appClassPatcherBytecode, newExtClassLoader);
+                byte[] gfhPatcherBytecode = getClassBytecode(gfhPatcherClassName, Relauncher.class.getClassLoader());
+                defineClass(gfhPatcherClassName, gfhPatcherBytecode, isJava9OrHigher ? null : newExtClassLoader);
 
                 // Make new AppClassLoader
-                Method getAppClassLoader = newAppClass.getDeclaredMethod("getAppClassLoader", ClassLoader.class);
-                getAppClassLoader.setAccessible(true);
-                ClassLoader newAppClassLoader = (ClassLoader) getAppClassLoader.invoke(null, extClassLoader);
+                ClassLoader newAppClassLoader;
+                if(!isJava9OrHigher) {
+                    Method getAppClassLoader = newAppClass.getDeclaredMethod("getAppClassLoader", ClassLoader.class);
+                    newAppClassLoader = (ClassLoader) Invoker.unreflect(getAppClassLoader).invoke(extClassLoader);
+                } else {
+                    Class<?> urlClassPathClass = Class.forName("jdk.internal.loader.URLClassPath");
+                    Class<?> urlSHFClass = Class.forName("java.net.URLStreamHandlerFactory");
+                    Object ucp = Invoker.unreflectConstructor(urlClassPathClass.getDeclaredConstructor(URL[].class, urlSHFClass, AccessControlContext.class))
+                            .invoke((Object) new URL[0], null, null);
+                    String cp = System.getProperty("java.class.path");
+                    if(!cp.isEmpty()) {
+                        MethodHandle addUrl = Invoker.unreflect(urlClassPathClass.getDeclaredMethod("addURL", URL.class));
+                        for(String s : cp.split(File.pathSeparator)) {
+                            File file = new File(s).getCanonicalFile();
+                            addUrl.invoke(ucp, file.toURI().toURL());
+                        }
+                    }
+                    Class<?> appClassLoaderClass = Class.forName(appClassLoaderClassName);
+                    Constructor<?> appCtor = appClassLoaderClass.getDeclaredConstructor(extClassLoaderClass, urlClassPathClass);
+                    newAppClassLoader = (ClassLoader) Invoker.unreflectConstructor(appCtor).invoke(extClassLoader, ucp);
+                }
                 Thread.currentThread().setContextClassLoader(newAppClassLoader);
+
+                if(isJava9OrHigher) {
+                    redefineClass(Class.forName(appClassLoaderClassName), appWriter.toByteArray());
+                }
 
                 // execute entrypoints
                 defineClass(PrePrePrePreLaunch.class.getName(), FabricLauncherBase.getLauncher().getClassByteArray(PrePrePrePreLaunch.class.getName(), false), newAppClassLoader);
@@ -229,6 +268,11 @@ public class Relauncher {
 
     private static Class<?> defineClass(String name, byte[] bytecode, ClassLoader classLoader) {
         return Unsafe.defineClass(name, bytecode, 0, bytecode.length, classLoader, GrossFabricHacks.class.getProtectionDomain());
+    }
+
+    private static Class<?> redefineClass(Class<?> original, byte[] bytecode) throws UnmodifiableClassException, ClassNotFoundException {
+        InstrumentationApi.instrumentation.redefineClasses(new ClassDefinition(original, bytecode));
+        return original;
     }
 
     private static byte[] getClassBytecode(String name, ClassLoader source) throws IOException, ClassNotFoundException {

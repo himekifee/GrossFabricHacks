@@ -1,4 +1,4 @@
-package net.devtech.grossfabrichacks.relaunch;
+package jdk.internal.loader;
 
 import sun.misc.URLClassPath;
 
@@ -8,10 +8,9 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLStreamHandlerFactory;
 
-public class AppClassPatcher {
+public class GrossFabricHacksPatcher {
 
     public static Class<?> patchClass(String name, boolean resolve) {
-        System.out.println(name);
         return null;
     }
 
