@@ -14,6 +14,7 @@ import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.api.ModContainer;
+import net.gudenau.lib.unsafe.Unsafe;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,15 +78,19 @@ public class GrossFabricHacks implements LanguageAdapter {
         if (!FabricLoader.getInstance().isDevelopmentEnvironment()) {
             final ClassLoader knotClassLoader = GrossFabricHacks.class.getClassLoader();
 
-            for (final String name : new String[]{
-                "net.gudenau.lib.unsafe.Unsafe",
-                "net.devtech.grossfabrichacks.unsafe.UnsafeUtil",
-                "user11681.reflect.Accessor",
-                "user11681.reflect.Classes",
-                "user11681.reflect.Fields",
-                "user11681.reflect.Invoker",
-                "user11681.reflect.Reflect"}) {
-                Classes.defineSystemClass(knotClassLoader, name);
+            try {
+                for (final String name : new String[]{
+                    "net.gudenau.lib.unsafe.Unsafe",
+                    "net.devtech.grossfabrichacks.unsafe.UnsafeUtil",
+                    "user11681.reflect.Accessor",
+                    "user11681.reflect.Classes",
+                    "user11681.reflect.Fields",
+                    "user11681.reflect.Invoker",
+                    "user11681.reflect.Reflect"}) {
+                    Classes.defineClass(Classes.systemClassLoader, name, IOUtils.toByteArray(knotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class")));
+                }
+            } catch (final Throwable throwable) {
+                Unsafe.throwException(throwable);
             }
         }
 
