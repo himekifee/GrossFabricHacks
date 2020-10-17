@@ -102,6 +102,6 @@ public class GrossFabricHacks implements LanguageAdapter {
             "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader"
         );
 
-        DynamicEntry.maybeExecute("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
+        DynamicEntry.tryExecute("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
     }
 }
