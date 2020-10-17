@@ -19,13 +19,13 @@ import user11681.reflect.Invoker;
 public class EarlyKnotClassDelegate extends KnotClassDelegate {
     public static final Class<?> superclass = KnotClassDelegate.class;
 
+    public static boolean transformInitialized;
+
     private static FabricMixinTransformerProxy mixinTransformer;
     private static final boolean development;
     private static final EnvType environment;
     private static final GameProvider provider;
     private static final MethodHandle canTransformClass;
-
-    public static boolean transformInitialized;
 
     public EarlyKnotClassDelegate(final boolean isDevelopment, final EnvType envType, final KnotClassLoaderInterface itf, final GameProvider provider) {
         super(isDevelopment, envType, itf, provider);
@@ -48,30 +48,6 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
         }
     }
 
-    public Object processClass(final String name, final boolean skipOriginalLoader) {
-        try {
-            byte[] bytecode = this.getRawClassByteArray(name, skipOriginalLoader);
-
-            if (GrossFabricHacks.Common.transformPreMixinRawClass) {
-                bytecode = GrossFabricHacks.Common.preMixinRawClassTransformer.transform(name, bytecode);
-            }
-
-            if (GrossFabricHacks.Common.transformPreMixinAsmClass) {
-                final ClassNode node = new ClassNode();
-
-                new ClassReader(bytecode).accept(node, 0);
-
-                GrossFabricHacks.Common.preMixinAsmClassTransformer.transform(node);
-
-                return node;
-            }
-
-            return bytecode;
-        } catch (final IOException exception) {
-            throw Unsafe.throwException(exception);
-        }
-    }
-
     @Override
     public byte[] getPreMixinClassByteArray(String name, final boolean skipOriginalLoader) {
         name = name.replace('/', '.');
@@ -82,15 +58,26 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
             }
 
             if (!transformInitialized) {
-                if (GrossFabricHacks.Common.transformPreMixinAsmClass) {
-                    final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+                byte[] bytecode = this.getRawClassByteArray(name, skipOriginalLoader);
 
-                    ((ClassNode) this.processClass(name, skipOriginalLoader)).accept(writer);
-
-                    return writer.toByteArray();
+                if (GrossFabricHacks.Common.transformPreMixinRawClass) {
+                    bytecode = GrossFabricHacks.Common.preMixinRawClassTransformer.transform(name, bytecode);
                 }
 
-                return (byte[]) this.processClass(name, skipOriginalLoader);
+                if (GrossFabricHacks.Common.preMixinAsmClassTransformer == null) {
+                    return bytecode;
+                }
+
+                final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+                final ClassNode node = new ClassNode();
+
+                new ClassReader(bytecode).accept(node, 0);
+
+                GrossFabricHacks.Common.preMixinAsmClassTransformer.transform(node);
+
+                node.accept(writer);
+
+                return writer.toByteArray();
             }
 
             byte[] input = provider.getEntrypointTransformer().transform(name);
@@ -111,13 +98,21 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
 
     @Override
     public byte[] getPostMixinClassByteArray(final String name) {
+        final byte[] bytecode = this.getPreMixinClassByteArray(name, true);
+
         if (!canTransformClass(name)) {
-            return this.getPreMixinClassByteArray(name, true);
+            return bytecode;
         }
 
         if (!transformInitialized) {
-            if (GrossFabricHacks.Common.transformPreMixinAsmClass) {
-                final ClassNode node = (ClassNode) processClass(name, true);
+            if (bytecode == null) {
+                return null;
+            }
+
+            if (GrossFabricHacks.Common.shouldWrite) {
+                final ClassNode node = new ClassNode();
+
+                new ClassReader(bytecode).accept(node, 0);
 
                 if (GrossFabricHacks.Common.transformPostMixinAsmClass) {
                     GrossFabricHacks.Common.postMixinAsmClassTransformer.transform(node);
@@ -134,10 +129,10 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
                 return writer.toByteArray();
             }
 
-            return this.getPreMixinClassByteArray(name, true);
+            return bytecode;
         }
 
-        return mixinTransformer.transformClassBytes(name, name, this.getPreMixinClassByteArray(name, true));
+        return mixinTransformer.transformClassBytes(name, name, bytecode);
     }
 
     static {
