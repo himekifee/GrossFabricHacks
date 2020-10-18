@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.security.ProtectionDomain;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
@@ -14,12 +15,14 @@ import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.api.ModContainer;
+import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 import net.gudenau.lib.unsafe.Unsafe;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import user11681.dynamicentry.DynamicEntry;
 import user11681.reflect.Classes;
+import user11681.reflect.Reflect;
 
 public class GrossFabricHacks implements LanguageAdapter {
     private static final Logger logger = LogManager.getLogger("GrossFabricHacks");
@@ -75,8 +78,11 @@ public class GrossFabricHacks implements LanguageAdapter {
     static {
         logger.info("no good? no, this man is definitely up to evil.");
 
+        final ProtectionDomain protectionDomain = GrossFabricHacks.class.getProtectionDomain();
+
         if (!FabricLoader.getInstance().isDevelopmentEnvironment()) {
             final ClassLoader knotClassLoader = GrossFabricHacks.class.getClassLoader();
+            final ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
 
             try {
                 for (final String name : new String[]{
@@ -87,20 +93,24 @@ public class GrossFabricHacks implements LanguageAdapter {
                     "user11681.reflect.Fields",
                     "user11681.reflect.Invoker",
                     "user11681.reflect.Reflect"}) {
-                    Classes.defineClass(Classes.systemClassLoader, name, IOUtils.toByteArray(knotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class")));
+                    final byte[] bytecode = IOUtils.toByteArray(knotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class"));
+
+                    Unsafe.defineClass(name, bytecode, 0, bytecode.length, systemClassLoader, protectionDomain);
                 }
             } catch (final Throwable throwable) {
-                Unsafe.throwException(throwable);
+                throw Unsafe.throwException(throwable);
             }
         }
 
-        Classes.addURL(Classes.systemClassLoader, GrossFabricHacks.class.getProtectionDomain().getCodeSource().getLocation());
+        Classes.addURL(Classes.systemClassLoader, protectionDomain.getCodeSource().getLocation());
         Classes.load(Classes.systemClassLoader,
             "net.devtech.grossfabrichacks.GrossFabricHacks$Common",
             "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",
             "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
             "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader"
         );
+
+        Reflect.defaultClassLoader = UnsafeKnotClassLoader.instance;
 
         DynamicEntry.tryExecute("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
     }
