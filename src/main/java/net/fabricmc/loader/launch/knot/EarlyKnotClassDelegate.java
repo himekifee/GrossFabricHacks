@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
+import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.game.GameProvider;
@@ -19,8 +20,6 @@ import user11681.reflect.Invoker;
 public class EarlyKnotClassDelegate extends KnotClassDelegate {
     public static final Class<?> superclass = KnotClassDelegate.class;
 
-    public static boolean transformInitialized;
-
     private static FabricMixinTransformerProxy mixinTransformer;
     private static final boolean development;
     private static final EnvType environment;
@@ -35,9 +34,13 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
     public void initializeTransformers() {
         super.initializeTransformers();
 
-        transformInitialized = true;
-
         mixinTransformer = Accessor.getObject(this, superclass, "mixinTransformer");
+
+        GrossFabricHacks.Common.mixinLoaded = true;
+
+        if (GrossFabricHacks.Common.shouldWrite || GrossFabricHacks.Common.shouldHackMixin) {
+            TransformerApi.manualLoad();
+        }
     }
 
     public static boolean canTransformClass(final String klass) {
@@ -57,7 +60,7 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
                 return this.getRawClassByteArray(name, skipOriginalLoader);
             }
 
-            if (!transformInitialized) {
+            if (!GrossFabricHacks.Common.mixinLoaded) {
                 byte[] bytecode = this.getRawClassByteArray(name, skipOriginalLoader);
 
                 if (GrossFabricHacks.Common.transformPreMixinRawClass) {
@@ -104,35 +107,36 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
             return bytecode;
         }
 
-        if (!transformInitialized) {
-            if (bytecode == null) {
-                return null;
-            }
-
-            if (GrossFabricHacks.Common.shouldWrite) {
-                final ClassNode node = new ClassNode();
-
-                new ClassReader(bytecode).accept(node, 0);
-
-                if (GrossFabricHacks.Common.transformPostMixinAsmClass) {
-                    GrossFabricHacks.Common.postMixinAsmClassTransformer.transform(node);
-                }
-
-                final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-
-                node.accept(writer);
-
-                if (GrossFabricHacks.Common.transformPostMixinRawClass) {
-                    return GrossFabricHacks.Common.postMixinRawClassTransformer.transform(name.replace('.', '/'), writer.toByteArray());
-                }
-
-                return writer.toByteArray();
-            }
-
-            return bytecode;
+        if (GrossFabricHacks.Common.mixinLoaded) {
+            return mixinTransformer.transformClassBytes(name, name, bytecode);
         }
 
-        return mixinTransformer.transformClassBytes(name, name, bytecode);
+        if (bytecode == null) {
+            return null;
+        }
+
+        if (GrossFabricHacks.Common.shouldWrite) {
+            final ClassNode node = new ClassNode();
+
+            new ClassReader(bytecode).accept(node, 0);
+
+            if (GrossFabricHacks.Common.transformPostMixinAsmClass) {
+                GrossFabricHacks.Common.postMixinAsmClassTransformer.transform(node);
+            }
+
+            final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+
+            node.accept(writer);
+
+            if (GrossFabricHacks.Common.transformPostMixinRawClass) {
+                return GrossFabricHacks.Common.postMixinRawClassTransformer.transform(name.replace('.', '/'), writer.toByteArray());
+            }
+
+            return writer.toByteArray();
+        }
+
+        return bytecode;
+
     }
 
     static {

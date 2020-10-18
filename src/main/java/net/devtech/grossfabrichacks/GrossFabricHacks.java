@@ -32,7 +32,7 @@ public class GrossFabricHacks implements LanguageAdapter {
      */
     public static class Common {
         public static boolean mixinLoaded;
-        public static boolean manualLoad;
+        public static boolean shouldHackMixin;
 
         public static boolean shouldWrite;
         public static boolean transformPreMixinRawClass;
