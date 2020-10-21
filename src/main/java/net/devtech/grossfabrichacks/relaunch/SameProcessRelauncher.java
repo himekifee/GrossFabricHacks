@@ -35,12 +35,13 @@ import java.util.function.Consumer;
 
 public class SameProcessRelauncher {
 
+    private static final String ARG_IS_RELAUNCHED = SameProcessRelauncher.class.getName() + ".IS_RELAUNCHED";
     private static final Logger LOGGER = LogManager.getLogger("SameProcessRelauncher");
 
     public static void relaunchIfNeeded() {
         // We don't use isAnnotationPresent because Knot won't
         // load the RelaunchMarker class from the AppClassLoader
-        boolean isRelaunched = Arrays.asList(Knot.class.getAnnotations()).stream().anyMatch(a -> a.annotationType().getName().equals(RelaunchMarker.class.getName()));
+        boolean isRelaunched = Boolean.getBoolean(ARG_IS_RELAUNCHED);
         if(isRelaunched) return;
         try {
             // get entrypoints
@@ -83,113 +84,10 @@ public class SameProcessRelauncher {
                 newExtClassLoader = (ClassLoader) Invoker.unreflectConstructor(platformCtor).invoke(bootLoader);
             }
 
-            // Make a new AppClassLoader class
-            Consumer<MethodNode> patchSyntheticCalls = methodNode -> {
-                if(!isJava9OrHigher) {
-                    // Patch inner class synthetic methods
-                    for (AbstractInsnNode insn : methodNode.instructions) {
-                        if (insn instanceof MethodInsnNode) {
-                            MethodInsnNode mInsn = (MethodInsnNode) insn;
-                            if (mInsn.owner.equals(launcherClassName.replace('.', '/')) && mInsn.name.contains("$")) {
-                                mInsn.owner = gfhPatcherClassName;
-                                switch (mInsn.desc) {
-                                    case "()Ljava/net/URLStreamHandlerFactory;": {
-                                        mInsn.name = "getFactory";
-                                        break;
-                                    }
-                                    case "(Ljava/lang/String;)[Ljava/io/File;": {
-                                        mInsn.name = "getClassPath";
-                                        break;
-                                    }
-                                    case "([Ljava/io/File;)[Ljava/net/URL;": {
-                                        mInsn.name = "pathToURLs";
-                                        break;
-                                    }
-                                    case "()Ljava/lang/String;": {
-                                        mInsn.name = "getBootClassPath";
-                                        break;
-                                    }
-                                }
-                            } else if(mInsn.owner.equals("sun/misc/URLClassPath")) {
-                                mInsn.setOpcode(Opcodes.INVOKESTATIC);
-                                mInsn.owner = gfhPatcherClassName;
-                                switch (mInsn.desc) {
-                                    case "(Ljava/lang/ClassLoader;)V": {
-                                        mInsn.name = "initLookupCache";
-                                        mInsn.desc = "(Ljava/lang/Object;Ljava/lang/ClassLoader;)V";
-                                        break;
-                                    }
-                                    case "(Ljava/lang/String;)Z": {
-                                        mInsn.name = "knownToNotExist";
-                                        mInsn.desc = "(Ljava/lang/Object;Ljava/lang/String;)Z";
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-            byte[] appClassLoaderBytecode = getClassBytecode(appClassLoaderClassName, newExtClassLoader);
-            ClassReader appReader = new ClassReader(appClassLoaderBytecode);
-            ClassNode appNode = new ClassNode();
-            appReader.accept(appNode, 0);
-            appNode.methods.forEach(methodNode -> {
-                if(methodNode.name.equals("loadClass")) {
-                    // find original first node
-                    LabelNode origHead = null;
-                    ListIterator<AbstractInsnNode> origInsns = methodNode.instructions.iterator();
-                    while(origInsns.hasNext()) {
-                        AbstractInsnNode node = origInsns.next();
-                        if(node instanceof LabelNode) {
-                            origHead = (LabelNode) node;
-                            // we use an extra local for our injection, so we need to chop it off
-                            origInsns.add(new FrameNode(Opcodes.F_CHOP, 0, new String[] {"Ljava/lang/Class;"}, 0, new String[0]));
-                            break;
-                        }
-                    }
-                    ArrayList<AbstractInsnNode> insns = new ArrayList<>();
-                    insns.add(new LabelNode());
-                    insns.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                    insns.add(new VarInsnNode(Opcodes.ILOAD, 2));
-                    insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, gfhPatcherClassName, "patchClass", "(Ljava/lang/String;Z)Ljava/lang/Class;"));
-                    insns.add(new VarInsnNode(Opcodes.ASTORE, 3));
-                    insns.add(new VarInsnNode(Opcodes.ALOAD, 3));
-                    insns.add(new JumpInsnNode(Opcodes.IFNULL, origHead));
-                    insns.add(new VarInsnNode(Opcodes.ALOAD, 3));
-                    insns.add(new InsnNode(Opcodes.ARETURN));
-                    InsnList insnsList = new InsnList();
-                    insns.forEach(insnsList::add);
-                    methodNode.instructions.insert(insnsList);
-                }
-                patchSyntheticCalls.accept(methodNode);
-            });
-            ClassWriter appWriter = new ClassWriter(0);
-            appNode.accept(appWriter);
-            Class<?> newAppClass = null;
-            if(!isJava9OrHigher) {
-                newAppClass = defineClass(appClassLoaderClassName, appWriter.toByteArray(), newExtClassLoader);
-            }
-
-            if(!isJava9OrHigher) {
-                // Redefine AppClassLoader$1
-                byte[] appClassLoader1Bytecode = getClassBytecode(appClassLoaderClassName + "$1", newExtClassLoader);
-                ClassReader app1Reader = new ClassReader(appClassLoader1Bytecode);
-                ClassNode app1Node = new ClassNode();
-                app1Reader.accept(app1Node, 0);
-                ClassWriter app1Writer = new ClassWriter(0);
-                app1Node.methods.forEach(patchSyntheticCalls);
-                app1Node.accept(app1Writer);
-                defineClass(appClassLoaderClassName + "$1", app1Writer.toByteArray(), newExtClassLoader);
-            }
-
-            // Define AppClassPatcher
-            byte[] gfhPatcherBytecode = getClassBytecode(gfhPatcherClassName, SameProcessRelauncher.class.getClassLoader());
-            defineClass(gfhPatcherClassName, gfhPatcherBytecode, isJava9OrHigher ? null : newExtClassLoader);
-
             // Make new AppClassLoader
             ClassLoader newAppClassLoader;
             if(!isJava9OrHigher) {
+                Class<?> newAppClass = newExtClassLoader.loadClass(appClassLoaderClassName);
                 Method getAppClassLoader = newAppClass.getDeclaredMethod("getAppClassLoader", ClassLoader.class);
                 newAppClassLoader = (ClassLoader) Invoker.unreflect(getAppClassLoader).invoke(extClassLoader);
             } else {
@@ -214,10 +112,6 @@ public class SameProcessRelauncher {
             scl.setAccessible(true);
             scl.set(null, newAppClassLoader);
             Thread.currentThread().setContextClassLoader(newAppClassLoader);
-
-            //if(isJava9OrHigher) {
-            //    redefineClass(Class.forName(appClassLoaderClassName), appWriter.toByteArray());
-            //}
 
             // execute entrypoints
             defineClass(PrePrePrePreLaunch.class.getName(), FabricLauncherBase.getLauncher().getClassByteArray(PrePrePrePreLaunch.class.getName(), false), newAppClassLoader);
@@ -244,18 +138,10 @@ public class SameProcessRelauncher {
             }
 
             // Set RelaunchLatch to true with ASM
-            String relaunchClassName = "net.fabricmc.loader.launch.knot.Knot";
-            ClassReader relaunchReader = new ClassReader(FabricLauncherBase.getLauncher().getClassByteArray(relaunchClassName, false));
-            ClassNode relaunchNode = new ClassNode();
-            relaunchReader.accept(relaunchNode, 0);
-            if(relaunchNode.visibleAnnotations == null) relaunchNode.visibleAnnotations = new ArrayList<>();
-            relaunchNode.visibleAnnotations.add(new AnnotationNode("Lnet/devtech/grossfabrichacks/relaunch/RelaunchMarker;"));
-            ClassWriter relaunchWriter = new ClassWriter(0);
-            relaunchNode.accept(relaunchWriter);
-            Class<?> newKnotClass = defineClass(relaunchClassName, relaunchWriter.toByteArray(), newAppClassLoader);
+            System.setProperty(ARG_IS_RELAUNCHED, "true");
 
             // run Knot
-            Method knotMain = newKnotClass.getMethod("main", String[].class);
+            Method knotMain = newAppClassLoader.loadClass("net.fabricmc.loader.launch.knot.Knot").getMethod("main", String[].class);
             try {
                 knotMain.invoke(null, (Object) args.toArray());
             } catch (Throwable t) {
@@ -275,11 +161,6 @@ public class SameProcessRelauncher {
     private static Class<?> defineClass(String name, byte[] bytecode, ClassLoader classLoader) {
         return Unsafe.defineClass(name, bytecode, 0, bytecode.length, classLoader, GrossFabricHacks.class.getProtectionDomain());
     }
-
-    //private static Class<?> redefineClass(Class<?> original, byte[] bytecode) throws UnmodifiableClassException, ClassNotFoundException {
-    //    InstrumentationApi.instrumentation.redefineClasses(new ClassDefinition(original, bytecode));
-    //    return original;
-    //}
 
     private static byte[] getClassBytecode(String name, ClassLoader source) throws IOException, ClassNotFoundException {
         InputStream inputStream = source.getResourceAsStream(name.replace('.', '/') + ".class");
