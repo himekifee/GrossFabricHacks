@@ -1,7 +1,5 @@
 package net.devtech.grossfabrichacks;
 
-import java.io.*;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -23,10 +21,14 @@ import net.fabricmc.loader.gui.FabricGuiEntry;
 import net.gudenau.lib.unsafe.Unsafe;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import user11681.dynamicentry.DynamicEntry;
 
 @SuppressWarnings("ConstantConditions")
 public class GrossFabricHacks implements LanguageAdapter {
+
+    private static final Logger LOGGER = LogManager.getLogger("GrossFabricHacks");
+
     @Override
     public native <T> T create(ModContainer mod, String value, Class<T> type);
 
@@ -83,11 +85,11 @@ public class GrossFabricHacks implements LanguageAdapter {
         try {
             SameProcessRelauncher.relaunchIfNeeded();
         } catch (Throwable t) {
-            logger.fatal("Relaunching did not succeed. Please report this as a bug to GrossFabricHacks: https://github.com/Devan-Kerman/GrossFabricHacks/issues/new", t);
+            LOGGER.fatal("Relaunching did not succeed. Please report this as a bug to GrossFabricHacks: https://github.com/Devan-Kerman/GrossFabricHacks/issues/new", t);
             FabricGuiEntry.displayCriticalError(new GrossFabricHacksRelaunchException(t), true);
         }
 
-        logger.info("no good? no, this man is definitely up to evil.");
+        LOGGER.info("no good? no, this man is definitely up to evil.");
 
         try {
             final ClassLoader knotClassLoader = GrossFabricHacks.class.getClassLoader();
