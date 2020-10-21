@@ -72,7 +72,6 @@ public class GrossFabricHacks implements LanguageAdapter {
 
     static {
         LogManager.getLogger("GrossFabricHacks").info("no good? no, this man is definitely up to evil.");
-        System.err.println(GrossFabricHacks.class.getClassLoader());
 
         try {
             final ClassLoader knotClassLoader = GrossFabricHacks.class.getClassLoader();
@@ -108,8 +107,6 @@ public class GrossFabricHacks implements LanguageAdapter {
         } catch (final Throwable throwable) {
             throw Unsafe.throwException(throwable);
         }
-
-        System.err.println(GrossFabricHacks.class.getClassLoader());
 
         DynamicEntry.tryExecute("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
     }
