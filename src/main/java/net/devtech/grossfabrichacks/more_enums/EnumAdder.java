@@ -3,6 +3,7 @@ package net.devtech.grossfabrichacks.more_enums;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import net.gudenau.lib.unsafe.Unsafe;
 
 public class EnumAdder {
 	private static final Field ENUM_CONSTANT_DIRECTORY;
@@ -20,7 +21,7 @@ public class EnumAdder {
 			AQUIRE_CONSTRUCTOR_ACCESSOR = Constructor.class.getDeclaredMethod("acquireConstructorAccessor");
 			AQUIRE_CONSTRUCTOR_ACCESSOR.setAccessible(true);
 		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
+			throw Unsafe.throwException(e);
 		}
 	}
 
@@ -51,7 +52,7 @@ public class EnumAdder {
 				return instance;
 			}
 		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
+			throw Unsafe.throwException(e);
 		}
 	}
 

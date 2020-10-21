@@ -13,7 +13,13 @@ project.group = project.mavenGroup
 project.archivesBaseName = project.baseName
 project.version = project.modVersion
 
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
+}
+
 repositories {
+    mavenLocal()
+
     maven {url = "https://dl.bintray.com/user11681/maven"}
 }
 
@@ -33,10 +39,8 @@ dependencies {
     modApi(include("net.gudenau.lib:unsafe:+"))
     modApi(include("user11681:dynamicentry:+"))
     modApi(include("user11681:reflect:+"))
-}
 
-configurations.all {
-    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
+    modApi("net.fabricmc.fabric-api:fabric-api:+")
 }
 
 processResources {
