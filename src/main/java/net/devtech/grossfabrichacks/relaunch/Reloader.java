@@ -5,15 +5,26 @@ import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.security.SecureClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
+import net.gudenau.lib.unsafe.Unsafe;
 import org.apache.logging.log4j.LogManager;
+import user11681.reflect.Accessor;
+import user11681.reflect.Classes;
+import user11681.reflect.Fields;
+import user11681.reflect.Invoker;
 
-public class Relauncher {
+@SuppressWarnings("ConfusingArgumentToVarargsMethod")
+public class Reloader {
     public static final File home = new File(System.getProperty("java.home"));
 
     private static boolean isInHome(final String targetFile) {
@@ -35,6 +46,52 @@ public class Relauncher {
             }
         }
         return false;
+    }
+
+    public static void ensureReloaded() {
+        if (!isReloaded()) {
+            reload();
+        }
+    }
+
+    public static void reload() {
+        final SecureClassLoader currentLoader = (SecureClassLoader) ClassLoader.getSystemClassLoader();
+        final Class<? extends SecureClassLoader> klass = currentLoader.getClass();
+        final SecureClassLoader newLoader = Unsafe.allocateInstance(klass);
+
+        try {
+            for (final Field field : Fields.getAllFields(klass)) {
+                if (!Modifier.isStatic(field.getModifiers())) {
+                    if (field.getDeclaringClass() == ClassLoader.class) {
+                        if (field.getName().equals("classes")) {
+                            Accessor.putObject(newLoader, field, Invoker.findConstructor(field.getType(), MethodType.methodType(void.class)).invoke());
+
+                            continue;
+                        } else if (field.getName().equals("parent")) {
+                            continue;
+                        }
+                    }
+
+                    Accessor.copyObject(newLoader, currentLoader, field);
+                }
+            }
+
+            final FabricLoader fabric = FabricLoader.getInstance();
+            final MethodHandle main = Invoker.findStatic(Classes.load(newLoader, fabric.getEnvironmentType() == EnvType.CLIENT
+                ? "net.fabricmc.loader.launch.knot.KnotClient"
+                : "net.fabricmc.loader.launch.knot.KnotServer"
+            ), "main", MethodType.methodType(void.class, String[].class));
+
+            LogManager.shutdown();
+
+            System.setProperty("gfh.reloaded", "true");
+
+            main.invokeExact(fabric.getLaunchArguments(false));
+
+            System.exit(0);
+        } catch (final Throwable throwable) {
+            throw Unsafe.throwException(throwable);
+        }
     }
 
     public static ObjectArrayList<String> getGameArguments() {
@@ -85,7 +142,7 @@ public class Relauncher {
         // remove built-in Java libraries from classpath
         final List<String> classpath = new ArrayList<>(Arrays.asList(classpathStr.split(File.pathSeparator)));
 
-        classpath.removeIf(Relauncher::isInHome);
+        classpath.removeIf(Reloader::isInHome);
 
         final String newClasspathStr = String.join(File.pathSeparator, classpath);
         final ReferenceArrayList<String> args = ReferenceArrayList.wrap(new String[0], 0);
@@ -111,5 +168,9 @@ public class Relauncher {
         } catch (final IOException exception) {
             throw new UncheckedIOException(exception);
         }
+    }
+
+    public static boolean isReloaded() {
+        return Boolean.parseBoolean(System.getProperty("gfh.reloaded"));
     }
 }
