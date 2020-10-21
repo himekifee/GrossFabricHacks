@@ -11,13 +11,14 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
+import net.devtech.grossfabrichacks.relaunch.GrossFabricHacksRelaunchException;
 import net.devtech.grossfabrichacks.relaunch.SameProcessRelauncher;
-import net.devtech.grossfabrichacks.relaunch.SecondProcessRelauncher;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.api.ModContainer;
+import net.fabricmc.loader.gui.FabricGuiEntry;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -80,13 +81,11 @@ public class GrossFabricHacks implements LanguageAdapter {
     }
 
     static {
-        if(SecondProcessRelauncher.needsRelaunch()) {
-            try {
-                SameProcessRelauncher.relaunchIfNeeded();
-            } catch (Throwable t) {
-                logger.warn("Falling back to SecondProcessRelauncher", t);
-                SecondProcessRelauncher.relaunchIfNeeded();
-            }
+        try {
+            SameProcessRelauncher.relaunchIfNeeded();
+        } catch (Throwable t) {
+            logger.fatal("Relaunching did not succeed. Please report this as a bug to GrossFabricHacks: https://github.com/Devan-Kerman/GrossFabricHacks/issues/new", t);
+            FabricGuiEntry.displayCriticalError(new GrossFabricHacksRelaunchException(t), true);
         }
 
         logger.info("no good? no, this man is definitely up to evil.");
