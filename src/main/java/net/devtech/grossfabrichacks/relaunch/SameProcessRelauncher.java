@@ -3,35 +3,23 @@ package net.devtech.grossfabrichacks.relaunch;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePrePreLaunch;
-import net.devtech.grossfabrichacks.instrumentation.InstrumentationApi;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.discovery.ModResolver;
 import net.fabricmc.loader.game.MinecraftGameProvider;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.launch.knot.Knot;
 import net.fabricmc.loader.util.Arguments;
 import net.gudenau.lib.unsafe.Unsafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.*;
 import user11681.dynamicentry.DynamicEntry;
 import user11681.reflect.Invoker;
 
 import java.io.*;
-import java.lang.instrument.ClassDefinition;
-import java.lang.instrument.UnmodifiableClassException;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.*;
 import java.net.URL;
 import java.security.AccessControlContext;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.ListIterator;
-import java.util.function.Consumer;
 
 public class SameProcessRelauncher {
 
@@ -108,7 +96,12 @@ public class SameProcessRelauncher {
                 newAppClassLoader = (ClassLoader) Invoker.unreflectConstructor(appCtor).invoke(extClassLoader, ucp);
             }
 
-            Field scl = ClassLoader.class.getDeclaredField("scl");
+            Field scl;
+            try {
+                scl = ClassLoader.class.getDeclaredField("scl");
+            } catch (NoSuchFieldException e) {
+                scl = ClassLoader.class.getDeclaredField("applicationClassLoader");
+            }
             scl.setAccessible(true);
             scl.set(null, newAppClassLoader);
             Thread.currentThread().setContextClassLoader(newAppClassLoader);
