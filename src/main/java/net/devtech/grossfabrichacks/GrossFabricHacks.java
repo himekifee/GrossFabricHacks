@@ -15,18 +15,13 @@ import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.api.ModContainer;
-import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 import net.gudenau.lib.unsafe.Unsafe;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import user11681.dynamicentry.DynamicEntry;
-import user11681.reflect.Classes;
-import user11681.reflect.Reflect;
 
+@SuppressWarnings("ConstantConditions")
 public class GrossFabricHacks implements LanguageAdapter {
-    private static final Logger logger = LogManager.getLogger("GrossFabricHacks");
-
     @Override
     public native <T> T create(ModContainer mod, String value, Class<T> type);
 
@@ -76,41 +71,45 @@ public class GrossFabricHacks implements LanguageAdapter {
     }
 
     static {
-        logger.info("no good? no, this man is definitely up to evil.");
+        LogManager.getLogger("GrossFabricHacks").info("no good? no, this man is definitely up to evil.");
+        System.err.println(GrossFabricHacks.class.getClassLoader());
 
-        final ProtectionDomain protectionDomain = GrossFabricHacks.class.getProtectionDomain();
-
-        if (!FabricLoader.getInstance().isDevelopmentEnvironment()) {
+        try {
             final ClassLoader knotClassLoader = GrossFabricHacks.class.getClassLoader();
             final ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+            final ProtectionDomain protectionDomain = GrossFabricHacks.class.getProtectionDomain();
+            final String[] classes = new String[]{
+                "net.gudenau.lib.unsafe.Unsafe",
+                "user11681.reflect.Accessor",
+                "user11681.reflect.Invoker",
+                "user11681.reflect.Classes",
+                "user11681.reflect.Fields",
+                "user11681.reflect.Reflect",
+                "net.devtech.grossfabrichacks.unsafe.UnsafeUtil",
+                "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",
+                "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
+                "net.devtech.grossfabrichacks.GrossFabricHacks$Common",
+                "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader",
+            };
 
-            try {
-                for (final String name : new String[]{
-                    "net.gudenau.lib.unsafe.Unsafe",
-                    "net.devtech.grossfabrichacks.unsafe.UnsafeUtil",
-                    "user11681.reflect.Accessor",
-                    "user11681.reflect.Classes",
-                    "user11681.reflect.Fields",
-                    "user11681.reflect.Invoker",
-                    "user11681.reflect.Reflect"}) {
-                    final byte[] bytecode = IOUtils.toByteArray(knotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class"));
+            final int totalClassCount = classes.length;
+            final int definedClassCount = totalClassCount - (FabricLoader.getInstance().isDevelopmentEnvironment() ? 6 : 0);
 
-                    Unsafe.defineClass(name, bytecode, 0, bytecode.length, systemClassLoader, protectionDomain);
+            for (int i = definedClassCount; i < totalClassCount; i++) {
+                final String name = classes[i];
+                final byte[] bytecode = IOUtils.toByteArray(knotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class"));
+                final Class<?> klass = Unsafe.defineClass(name, bytecode, 0, bytecode.length, systemClassLoader, protectionDomain);
+
+                if (i == totalClassCount - 1) {
+                    Unsafe.ensureClassInitialized(klass);
                 }
-            } catch (final Throwable throwable) {
-                throw Unsafe.throwException(throwable);
             }
+
+        } catch (final Throwable throwable) {
+            throw Unsafe.throwException(throwable);
         }
 
-        Classes.addURL(Classes.systemClassLoader, protectionDomain.getCodeSource().getLocation());
-        Classes.load(Classes.systemClassLoader,
-            "net.devtech.grossfabrichacks.GrossFabricHacks$Common",
-            "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",
-            "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
-            "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader"
-        );
-
-        Reflect.defaultClassLoader = UnsafeKnotClassLoader.instance;
+        System.err.println(GrossFabricHacks.class.getClassLoader());
 
         DynamicEntry.tryExecute("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
     }

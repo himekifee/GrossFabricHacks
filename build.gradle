@@ -39,6 +39,8 @@ dependencies {
     modApi(include("net.gudenau.lib:unsafe:+"))
     modApi(include("user11681:dynamicentry:+"))
     modApi(include("user11681:reflect:+"))
+
+    modApi("net.fabricmc.fabric-api:fabric-api:+")
 }
 
 processResources {

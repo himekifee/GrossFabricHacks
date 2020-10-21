@@ -4,6 +4,7 @@ import java.net.URLClassLoader;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.game.GameProvider;
 import user11681.reflect.Classes;
+import user11681.reflect.Reflect;
 
 public class UnsafeKnotClassLoader extends KnotClassLoader {
     public static final UnsafeKnotClassLoader instance;
@@ -71,6 +72,9 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
         delegate = knotClassLoader.getDelegate();
         instance = Classes.setClass(knotClassLoader, UnsafeKnotClassLoader.class);
 
+        Classes.addSystemURL(UnsafeKnotClassLoader.class.getProtectionDomain().getCodeSource().getLocation());
         Classes.setClass(delegate, EarlyKnotClassDelegate.class);
+
+        Reflect.defaultClassLoader = instance;
     }
 }
