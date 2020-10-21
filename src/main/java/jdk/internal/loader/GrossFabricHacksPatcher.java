@@ -1,7 +1,5 @@
 package jdk.internal.loader;
 
-import sun.misc.URLClassPath;
-
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -10,6 +8,10 @@ import java.net.URLStreamHandlerFactory;
 
 public class GrossFabricHacksPatcher {
 
+    /**
+     * Hook for patching classes on the AppClassLoader.
+     * Only works in Java 8 right now.
+     */
     public static Class<?> patchClass(String name, boolean resolve) {
         return null;
     }
@@ -42,13 +44,13 @@ public class GrossFabricHacksPatcher {
         return (String) bootClassPathField.get(null);
     }
 
-    public static void initLookupCache(URLClassPath urlClassPath, ClassLoader classLoader) throws Exception {
+    public static void initLookupCache(Object urlClassPath, ClassLoader classLoader) throws Exception {
         Method initLookupCache = urlClassPath.getClass().getDeclaredMethod("initLookupCache", ClassLoader.class);
         initLookupCache.setAccessible(true);
         initLookupCache.invoke(urlClassPath, classLoader);
     }
 
-    public static boolean knownToNotExist(URLClassPath urlClassPath, String s) throws Exception {
+    public static boolean knownToNotExist(Object urlClassPath, String s) throws Exception {
         Method knownToNotExist = urlClassPath.getClass().getDeclaredMethod("knownToNotExist", String.class);
         knownToNotExist.setAccessible(true);
         return (boolean) knownToNotExist.invoke(urlClassPath, s);

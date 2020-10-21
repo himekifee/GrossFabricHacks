@@ -190,7 +190,7 @@ public class InstrumentationApi {
 
             ByteBuddyAgent.attach(agent, name.substring(0, name.indexOf('@')));
 
-            agent.delete();
+            // agent.delete();
         }
 
         instrumentation = InstrumentationAgent.instrumentation;

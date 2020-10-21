@@ -45,12 +45,12 @@ public class SameProcessRelauncher {
         try {
             // get entrypoints
             ReferenceArrayList<PrePrePrePreLaunch> entrypoints = ReferenceArrayList.wrap((PrePrePrePreLaunch[]) Array.newInstance(PrePrePrePreLaunch.class, 5), 0);
-            DynamicEntry.executeOptionalEntrypoint("gfh:prePrePrePreLaunch", PrePrePrePreLaunch.class, entrypoints::add);
+            DynamicEntry.execute("gfh:prePrePrePreLaunch", PrePrePrePreLaunch.class, entrypoints::add);
 
             // don't relaunch if there is no point in doing so
             // if(entrypoints.size() == 0) break relaunch;
 
-            LOGGER.info("Relaunching...");
+            LOGGER.info("Relaunching with SameProcessRelauncher...");
 
             // close the in-memory file system to avoid later collision
             Field inMemoryFsField = ModResolver.class.getDeclaredField("inMemoryFs");
@@ -116,12 +116,12 @@ public class SameProcessRelauncher {
                                 switch (mInsn.desc) {
                                     case "(Ljava/lang/ClassLoader;)V": {
                                         mInsn.name = "initLookupCache";
-                                        mInsn.desc = "(Lsun/misc/URLClassPath;Ljava/lang/ClassLoader;)V";
+                                        mInsn.desc = "(Ljava/lang/Object;Ljava/lang/ClassLoader;)V";
                                         break;
                                     }
                                     case "(Ljava/lang/String;)Z": {
                                         mInsn.name = "knownToNotExist";
-                                        mInsn.desc = "(Lsun/misc/URLClassPath;Ljava/lang/String;)Z";
+                                        mInsn.desc = "(Ljava/lang/Object;Ljava/lang/String;)Z";
                                         break;
                                     }
                                 }
@@ -209,11 +209,15 @@ public class SameProcessRelauncher {
                 Constructor<?> appCtor = appClassLoaderClass.getDeclaredConstructor(extClassLoaderClass, urlClassPathClass);
                 newAppClassLoader = (ClassLoader) Invoker.unreflectConstructor(appCtor).invoke(extClassLoader, ucp);
             }
+
+            Field scl = ClassLoader.class.getDeclaredField("scl");
+            scl.setAccessible(true);
+            scl.set(null, newAppClassLoader);
             Thread.currentThread().setContextClassLoader(newAppClassLoader);
 
-            if(isJava9OrHigher) {
-                redefineClass(Class.forName(appClassLoaderClassName), appWriter.toByteArray());
-            }
+            //if(isJava9OrHigher) {
+            //    redefineClass(Class.forName(appClassLoaderClassName), appWriter.toByteArray());
+            //}
 
             // execute entrypoints
             defineClass(PrePrePrePreLaunch.class.getName(), FabricLauncherBase.getLauncher().getClassByteArray(PrePrePrePreLaunch.class.getName(), false), newAppClassLoader);
@@ -255,7 +259,11 @@ public class SameProcessRelauncher {
             try {
                 knotMain.invoke(null, (Object) args.toArray());
             } catch (Throwable t) {
-                t.printStackTrace();
+                if(t.getCause() != null) {
+                    t.getCause().printStackTrace();
+                } else {
+                    t.printStackTrace();
+                }
                 System.exit(-1);
             }
             System.exit(0);
@@ -268,10 +276,10 @@ public class SameProcessRelauncher {
         return Unsafe.defineClass(name, bytecode, 0, bytecode.length, classLoader, GrossFabricHacks.class.getProtectionDomain());
     }
 
-    private static Class<?> redefineClass(Class<?> original, byte[] bytecode) throws UnmodifiableClassException, ClassNotFoundException {
-        InstrumentationApi.instrumentation.redefineClasses(new ClassDefinition(original, bytecode));
-        return original;
-    }
+    //private static Class<?> redefineClass(Class<?> original, byte[] bytecode) throws UnmodifiableClassException, ClassNotFoundException {
+    //    InstrumentationApi.instrumentation.redefineClasses(new ClassDefinition(original, bytecode));
+    //    return original;
+    //}
 
     private static byte[] getClassBytecode(String name, ClassLoader source) throws IOException, ClassNotFoundException {
         InputStream inputStream = source.getResourceAsStream(name.replace('.', '/') + ".class");

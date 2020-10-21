@@ -12,6 +12,7 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
 import net.devtech.grossfabrichacks.relaunch.SameProcessRelauncher;
+import net.devtech.grossfabrichacks.relaunch.SecondProcessRelauncher;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.fabricmc.loader.api.FabricLoader;
@@ -53,11 +54,15 @@ public class GrossFabricHacks implements LanguageAdapter {
                 return new File(source);
             }
 
-            final File agent = new File(System.getProperty("user.home"), "gross_agent.jar");
+            final File agent = new File(System.getProperty("user.dir"), "gross_agent.jar");
 
             if (!agent.exists()) {
                 try {
-                    final JarOutputStream agentJar = new JarOutputStream(new FileOutputStream(agent), new Manifest(new FileInputStream(new File(source, "/META-INF/MANIFEST.MF"))));
+                    File manifestFile = new File(source, "/META-INF/MANIFEST.MF");
+                    if(!manifestFile.exists()) {
+                        manifestFile = new File(source, "../../../resources/main/META-INF/MANIFEST.MF");
+                    }
+                    final JarOutputStream agentJar = new JarOutputStream(new FileOutputStream(agent), new Manifest(new FileInputStream(manifestFile)));
                     final String agentPath = "net/devtech/grossfabrichacks/instrumentation/InstrumentationAgent.class";
 
                     agentJar.putNextEntry(new ZipEntry(agentPath));
@@ -75,7 +80,14 @@ public class GrossFabricHacks implements LanguageAdapter {
     }
 
     static {
-        SameProcessRelauncher.relaunchIfNeeded();
+        if(SecondProcessRelauncher.needsRelaunch()) {
+            try {
+                SameProcessRelauncher.relaunchIfNeeded();
+            } catch (Throwable t) {
+                logger.warn("Falling back to SecondProcessRelauncher", t);
+                SecondProcessRelauncher.relaunchIfNeeded();
+            }
+        }
 
         logger.info("no good? no, this man is definitely up to evil.");
 
@@ -102,11 +114,7 @@ public class GrossFabricHacks implements LanguageAdapter {
             "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader"
         );
 
-        DynamicEntry.maybeExecute("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
-    }
-
-    private static Class<?> defineClass(String name, byte[] bytecode, ClassLoader classLoader) {
-        return Unsafe.defineClass(name, bytecode, 0, bytecode.length, classLoader, GrossFabricHacks.class.getProtectionDomain());
+        DynamicEntry.tryExecute("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
     }
 
 }
