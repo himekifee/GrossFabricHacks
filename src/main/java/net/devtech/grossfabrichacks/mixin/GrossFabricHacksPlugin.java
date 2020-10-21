@@ -2,6 +2,8 @@ package net.devtech.grossfabrichacks.mixin;
 
 import java.util.List;
 import java.util.Set;
+
+import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.entrypoints.PrePreLaunch;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -37,6 +39,7 @@ public class GrossFabricHacksPlugin implements IMixinConfigPlugin {
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
 
     static {
+        GrossFabricHacks.Common.mixinLoaded = true;
         DynamicEntry.tryExecute("gfh:prePreLaunch", PrePreLaunch.class, PrePreLaunch::onPrePreLaunch);
     }
 }
