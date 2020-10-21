@@ -2,7 +2,7 @@ package net.devtech.grossfabrichacks.relaunch;
 
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
-import net.devtech.grossfabrichacks.entrypoints.PrePrePrePreLaunch;
+import net.devtech.grossfabrichacks.entrypoints.RelaunchEntrypoint;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.discovery.ModResolver;
@@ -33,8 +33,9 @@ public class SameProcessRelauncher {
         if(isRelaunched) return;
         try {
             // get entrypoints
-            ReferenceArrayList<PrePrePrePreLaunch> entrypoints = ReferenceArrayList.wrap((PrePrePrePreLaunch[]) Array.newInstance(PrePrePrePreLaunch.class, 5), 0);
-            DynamicEntry.execute("gfh:prePrePrePreLaunch", PrePrePrePreLaunch.class, entrypoints::add);
+            ReferenceArrayList<RelaunchEntrypoint> entrypoints = ReferenceArrayList.wrap((RelaunchEntrypoint[]) Array.newInstance(RelaunchEntrypoint.class, 5), 0);
+            DynamicEntry.execute("gfh:prePrePrePreLaunch", RelaunchEntrypoint.class, entrypoints::add);
+            DynamicEntry.execute("gfh:relaunchEntrypoint", RelaunchEntrypoint.class, entrypoints::add);
 
             // don't relaunch if there is no point in doing so
             // if(entrypoints.size() == 0) break relaunch;
@@ -107,12 +108,12 @@ public class SameProcessRelauncher {
             Thread.currentThread().setContextClassLoader(newAppClassLoader);
 
             // execute entrypoints
-            defineClass(PrePrePrePreLaunch.class.getName(), FabricLauncherBase.getLauncher().getClassByteArray(PrePrePrePreLaunch.class.getName(), false), newAppClassLoader);
+            defineClass(RelaunchEntrypoint.class.getName(), FabricLauncherBase.getLauncher().getClassByteArray(RelaunchEntrypoint.class.getName(), false), newAppClassLoader);
             entrypoints.forEach((entrypoint) -> {
                 String binaryName = entrypoint.getClass().getName();
                 try {
                     Class<?> entrypointClass = defineClass(binaryName, FabricLauncherBase.getLauncher().getClassByteArray(binaryName, false), newAppClassLoader);
-                    Method onPrePrePrePreLaunch = entrypointClass.getMethod("onPrePrePrePreLaunch");
+                    Method onPrePrePrePreLaunch = entrypointClass.getMethod("onRelaunch");
                     onPrePrePrePreLaunch.invoke(entrypointClass.getConstructor().newInstance());
                 } catch (InvocationTargetException e) {
                     LOGGER.fatal(String.format("An error was encountered in the prePrePrePre entrypoint of class %s", binaryName), e);
