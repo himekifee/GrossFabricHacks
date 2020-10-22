@@ -19,4 +19,8 @@ package net.devtech.grossfabrichacks.entrypoints;
  */
 public interface RelaunchEntrypoint {
     void onRelaunch();
+
+    default boolean shouldRelaunch() {
+        return true;
+    }
 }

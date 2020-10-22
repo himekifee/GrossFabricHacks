@@ -4,20 +4,21 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.security.ProtectionDomain;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
-import net.devtech.grossfabrichacks.relaunch.GrossFabricHacksRelaunchException;
-import net.devtech.grossfabrichacks.relaunch.SameProcessRelauncher;
+import net.devtech.grossfabrichacks.reload.GrossFabricHacksReloadException;
+import net.devtech.grossfabrichacks.reload.Reloader;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.gui.FabricGuiEntry;
+import net.fabricmc.loader.launch.common.FabricLauncher;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import net.gudenau.lib.unsafe.Unsafe;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -26,7 +27,6 @@ import user11681.dynamicentry.DynamicEntry;
 
 @SuppressWarnings("ConstantConditions")
 public class GrossFabricHacks implements LanguageAdapter {
-
     private static final Logger LOGGER = LogManager.getLogger("GrossFabricHacks");
 
     @Override
@@ -34,8 +34,11 @@ public class GrossFabricHacks implements LanguageAdapter {
 
     /**
      * This class is intended to be loaded by the system class loader so that classes loaded by different class loaders may share information.
+     * It should be safe to load from any class loader after it is loaded by the system class loader.
      */
     public static class Common {
+        public static final String reloadedProperty = "gfh.reloaded";
+
         public static boolean mixinLoaded;
         public static boolean shouldHackMixin;
 
@@ -56,14 +59,16 @@ public class GrossFabricHacks implements LanguageAdapter {
                 return new File(source);
             }
 
-            final File agent = new File(System.getProperty("user.dir"), "gross_agent.jar");
+            final File agent = new File(source, "gross_agent.jar");
 
             if (!agent.exists()) {
                 try {
-                    File manifestFile = new File(source, "/META-INF/MANIFEST.MF");
-                    if(!manifestFile.exists()) {
+                    File manifestFile = new File(source, "META-INF/MANIFEST.MF");
+
+                    if (!manifestFile.exists()) {
                         manifestFile = new File(source, "../../../resources/main/META-INF/MANIFEST.MF");
                     }
+
                     final JarOutputStream agentJar = new JarOutputStream(new FileOutputStream(agent), new Manifest(new FileInputStream(manifestFile)));
                     final String agentPath = "net/devtech/grossfabrichacks/instrumentation/InstrumentationAgent.class";
 
@@ -73,26 +78,27 @@ public class GrossFabricHacks implements LanguageAdapter {
 
                     agentJar.close();
                 } catch (final IOException exception) {
-                    throw new UncheckedIOException(exception);
+                    crash(exception);
                 }
             }
 
             return agent;
         }
+
+        public static void crash(final Throwable throwable) {
+            FabricGuiEntry.displayCriticalError(new GrossFabricHacksReloadException(throwable), true);
+
+            throw Unsafe.throwException(throwable);
+        }
     }
 
     static {
-        try {
-            SameProcessRelauncher.relaunchIfNeeded();
-        } catch (Throwable t) {
-            LOGGER.fatal("Relaunching did not succeed. Please report this as a bug to GrossFabricHacks: https://github.com/Devan-Kerman/GrossFabricHacks/issues/new", t);
-            FabricGuiEntry.displayCriticalError(new GrossFabricHacksRelaunchException(t), true);
-        }
+        Reloader.ensureReloaded();
 
         LOGGER.info("no good? no, this man is definitely up to evil.");
 
         try {
-            final ClassLoader knotClassLoader = GrossFabricHacks.class.getClassLoader();
+            final FabricLauncher launcher = FabricLauncherBase.getLauncher();
             final ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
             final ProtectionDomain protectionDomain = GrossFabricHacks.class.getProtectionDomain();
             final String[] classes = new String[]{
@@ -107,14 +113,14 @@ public class GrossFabricHacks implements LanguageAdapter {
                 "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
                 "net.devtech.grossfabrichacks.GrossFabricHacks$Common",
                 "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader",
-            };
+                };
 
             final int totalClassCount = classes.length;
             final int definedClassCount = totalClassCount - (FabricLoader.getInstance().isDevelopmentEnvironment() ? 6 : 0);
 
             for (int i = definedClassCount; i < totalClassCount; i++) {
                 final String name = classes[i];
-                final byte[] bytecode = IOUtils.toByteArray(knotClassLoader.getResourceAsStream(name.replace('.', '/') + ".class"));
+                final byte[] bytecode = launcher.getClassByteArray(name, true);
                 final Class<?> klass = Unsafe.defineClass(name, bytecode, 0, bytecode.length, systemClassLoader, protectionDomain);
 
                 if (i == totalClassCount - 1) {
@@ -123,10 +129,9 @@ public class GrossFabricHacks implements LanguageAdapter {
             }
 
         } catch (final Throwable throwable) {
-            throw Unsafe.throwException(throwable);
+            Common.crash(throwable);
         }
 
         DynamicEntry.tryExecute("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
     }
-
 }

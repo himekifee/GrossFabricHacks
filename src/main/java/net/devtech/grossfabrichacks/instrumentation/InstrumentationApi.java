@@ -11,6 +11,7 @@ import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.devtech.grossfabrichacks.transformer.asm.AsmInstrumentationTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
+import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 import net.gudenau.lib.unsafe.Unsafe;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
@@ -185,13 +186,13 @@ public class InstrumentationApi {
     }
 
     static {
-        if (InstrumentationAgent.instrumentation == null) {
+        if (UnsafeKnotClassLoader.instance.isClassLoaded("net.devtech.grossfabrichacks.instrumentation") && InstrumentationAgent.instrumentation == null) {
             final File agent = GrossFabricHacks.Common.getAgent();
             final String name = ManagementFactory.getRuntimeMXBean().getName();
 
             ByteBuddyAgent.attach(agent, name.substring(0, name.indexOf('@')));
 
-            // agent.delete();
+             agent.delete();
         }
 
         instrumentation = InstrumentationAgent.instrumentation;

@@ -1,7 +1,8 @@
-package net.devtech.grossfabrichacks.relaunch;
+package net.devtech.grossfabrichacks.reload.relaunch;
 
 import java.util.Locale;
 
+@Deprecated
 public enum OS {
     LINUX("linux"),
 
