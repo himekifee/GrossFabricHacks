@@ -40,7 +40,7 @@ dependencies {
     modApi(include("user11681:dynamicentry:+"))
     modApi(include("user11681:reflect:+"))
 
-    modApi("net.fabricmc.fabric-api:fabric-api:+")
+//    modApi("net.fabricmc.fabric-api:fabric-api:+")
 }
 
 processResources {

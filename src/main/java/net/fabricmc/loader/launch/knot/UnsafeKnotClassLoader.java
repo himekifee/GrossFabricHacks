@@ -1,6 +1,5 @@
 package net.fabricmc.loader.launch.knot;
 
-import java.net.URL;
 import java.net.URLClassLoader;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.game.GameProvider;
@@ -73,10 +72,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
         delegate = knotClassLoader.getDelegate();
         instance = Classes.setClass(knotClassLoader, UnsafeKnotClassLoader.class);
 
-        for (final URL url : parent.getURLs()) {
-            Classes.addSystemURL(url);
-        }
-
+        Classes.addSystemURL(parent.getURLs());
         Classes.setClass(delegate, EarlyKnotClassDelegate.class);
 
         Reflect.defaultClassLoader = instance;

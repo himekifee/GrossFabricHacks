@@ -13,6 +13,7 @@ import net.devtech.grossfabrichacks.reload.GrossFabricHacksReloadException;
 import net.devtech.grossfabrichacks.reload.Reloader;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
+import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.api.ModContainer;
@@ -85,23 +86,29 @@ public class GrossFabricHacks implements LanguageAdapter {
             return agent;
         }
 
+        public static String getMainClass() {
+            return FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT
+                ? "net.fabricmc.loader.launch.knot.KnotClient"
+                : "net.fabricmc.loader.launch.knot.KnotServer";
+        }
+
         public static void crash(final Throwable throwable) {
+            throwable.printStackTrace();
+
             FabricGuiEntry.displayCriticalError(new GrossFabricHacksReloadException(throwable), true);
 
-            throw Unsafe.throwException(throwable);
+            System.exit(-1);
         }
     }
 
     static {
-        Reloader.ensureReloaded();
-
         LOGGER.info("no good? no, this man is definitely up to evil.");
 
         try {
             final FabricLauncher launcher = FabricLauncherBase.getLauncher();
             final ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
             final ProtectionDomain protectionDomain = GrossFabricHacks.class.getProtectionDomain();
-            final String[] classes = new String[]{
+            final String[] classes = {
                 "net.gudenau.lib.unsafe.Unsafe",
                 "user11681.reflect.Accessor",
                 "user11681.reflect.Invoker",
@@ -112,11 +119,11 @@ public class GrossFabricHacks implements LanguageAdapter {
                 "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",
                 "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
                 "net.devtech.grossfabrichacks.GrossFabricHacks$Common",
-                "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader",
-                };
+                "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader"
+            };
 
             final int totalClassCount = classes.length;
-            final int definedClassCount = totalClassCount - (FabricLoader.getInstance().isDevelopmentEnvironment() ? 6 : 0);
+            final int definedClassCount = FabricLoader.getInstance().isDevelopmentEnvironment() ? 6 : 0;
 
             for (int i = definedClassCount; i < totalClassCount; i++) {
                 final String name = classes[i];
@@ -127,10 +134,11 @@ public class GrossFabricHacks implements LanguageAdapter {
                     Unsafe.ensureClassInitialized(klass);
                 }
             }
-
         } catch (final Throwable throwable) {
             Common.crash(throwable);
         }
+
+        Reloader.ensureReloaded();
 
         DynamicEntry.tryExecute("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
     }
