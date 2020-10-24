@@ -2,15 +2,16 @@ package net.devtech.grossfabrichacks.unsafe;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.security.ProtectionDomain;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import net.gudenau.lib.unsafe.Unsafe;
-import org.apache.commons.io.IOUtils;
 import user11681.reflect.Classes;
 
 /**
  * works across all normal JVMs I think
  */
 public class UnsafeUtil {
+    public static final FabricLauncherBase launcher = (FabricLauncherBase) FabricLauncherBase.getLauncher();
+
     // constants
     public static final long BYTE_ARR_KLASS;
     public static final long SHORT_ARR_KLASS;
@@ -151,31 +152,6 @@ public class UnsafeUtil {
         return Unsafe.getInt(type, CLASS_KLASS_OFFSET);
     }
 
-    public static void putInt(final Object object, final String field, final int value) {
-        try {
-            Unsafe.putInt(object, Unsafe.objectFieldOffset(object.getClass().getDeclaredField(field)), value);
-        } catch (final NoSuchFieldException exception) {
-            throw Unsafe.throwException(exception);
-        }
-    }
-
-    public static void putInt(final Class<?> klass, final Object object, final String field, final int value) {
-        try {
-            Unsafe.putInt(object, Unsafe.objectFieldOffset(klass.getDeclaredField(field)), value);
-        } catch (final NoSuchFieldException exception) {
-            throw Unsafe.throwException(exception);
-        }
-    }
-
-    public static <T> T getObject(final long address) {
-        final Object[] box = new Object[1];
-        final long baseOffset = Unsafe.arrayBaseOffset(Object[].class);
-
-        Unsafe.putLong(box, baseOffset, address);
-
-        return (T) box[0];
-    }
-
     public static long addressOf(final Object object) {
         return addressOf(0, object);
     }
@@ -187,47 +163,11 @@ public class UnsafeUtil {
         return (Unsafe.getInt(objects, offset + index * scale) & 0xFFFFFFFFL) * Classes.addressFactor;
     }
 
-    public static <T> Class<T> defineAndInitialize(final String binaryName, final byte[] klass) {
-        return defineAndInitialize(binaryName, klass, null, null);
-    }
-
-    public static <T> Class<T> defineAndInitialize(final String binaryName, final byte[] klass, final ClassLoader loader) {
-        return defineAndInitialize(binaryName, klass, loader, null);
-    }
-
-    public static <T> Class<T> defineAndInitialize(final String binaryName, final byte[] bytecode, final ClassLoader loader, final ProtectionDomain protectionDomain) {
-        final Class<?> klass;
-
-        Unsafe.ensureClassInitialized(klass = Unsafe.defineClass(binaryName, bytecode, 0, bytecode.length, loader, protectionDomain));
-
-        return (Class<T>) klass;
-    }
-
-    public static <T> Class<T> initializeClass(final Class<?> klass) {
-        Unsafe.ensureClassInitialized(klass);
-
-        return (Class<T>) klass;
-    }
-
-    public static <T> Class<T> defineClass(final String binaryName, final byte[] klass) {
-        return Unsafe.defineClass(binaryName, klass, 0, klass.length, null, null);
-    }
-
-    public static <T> Class<T> defineClass(final String binaryName, final byte[] klass, final ClassLoader loader) {
-        return Unsafe.defineClass(binaryName, klass, 0, klass.length, loader, null);
-    }
-
-    public static <T> Class<T> defineClass(final String binaryName, final byte[] klass, final ClassLoader loader, final ProtectionDomain protectionDomain) {
-        return Unsafe.defineClass(binaryName, klass, 0, klass.length, loader, protectionDomain);
-    }
-
-    public static <T> Class<T> findAndDefineClass(final String binaryName, final ClassLoader loader) {
-        return defineClass(binaryName, findClass(binaryName), loader);
-    }
-
-    public static byte[] findClass(final String binaryName) {
+    public static <T> Class<T> findClass(final String binaryName, final ClassLoader loader) {
         try {
-            return IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream(binaryName.replace('.', '/') + ".class"));
+            final byte[] bytecode = launcher.getClassByteArray(binaryName, false);
+
+            return Unsafe.defineClass(binaryName, bytecode, 0, bytecode.length, loader, null);
         } catch (final IOException exception) {
             throw Unsafe.throwException(exception);
         }

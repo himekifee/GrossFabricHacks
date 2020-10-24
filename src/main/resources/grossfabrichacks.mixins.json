@@ -1,6 +1,6 @@
 {
     "required": true,
-    "package": "net.devtech.grossfabrichacks.mixin",
+    "package": "net.devtech.grossfabrichacks.asm",
     "compatibilityLevel": "JAVA_8",
-    "plugin": "net.devtech.grossfabrichacks.mixin.GrossFabricHacksPlugin"
+    "plugin": "net.devtech.grossfabrichacks.asm.GrossFabricHacksPlugin"
 }

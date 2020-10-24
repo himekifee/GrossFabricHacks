@@ -1,19 +1,49 @@
 package net.fabricmc.loader.launch.knot;
 
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import java.net.URLClassLoader;
+import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.game.GameProvider;
+import net.gudenau.lib.unsafe.Unsafe;
 import user11681.reflect.Classes;
 import user11681.reflect.Reflect;
 
+@SuppressWarnings("JavadocReference")
 public class UnsafeKnotClassLoader extends KnotClassLoader {
+    /**
+     * {@linkplain net.fabricmc.loader.launch.server.InjectingURLClassLoader InjectingURLClassLoader} in production servers; {@linkplain ClassLoader#getSystemClassLoader system class loader} everywhere else
+     */
+    public static final ClassLoader preKnotClassLoader = KnotClassLoader.class.getClassLoader();
     public static final UnsafeKnotClassLoader instance;
     public static final URLClassLoader parent;
     public static final ClassLoader dummyClassLoader;
-    public static final KnotClassDelegate delegate;
+    public static final EarlyKnotClassDelegate delegate;
+
+    public static final Reference2ReferenceOpenHashMap<String, Class<?>> overridingClasses = new Reference2ReferenceOpenHashMap<>();
 
     public UnsafeKnotClassLoader(final boolean isDevelopment, final EnvType envType, final GameProvider provider) {
         super(isDevelopment, envType, provider);
+    }
+
+    public static void override(final Class<?> klass) {
+        overridingClasses.put(klass.getName().intern(), klass);
+    }
+
+    public static void override(final String name) {
+        try {
+            overridingClasses.put(name.intern(), preKnotClassLoader.loadClass(name));
+        } catch (final ClassNotFoundException exception) {
+            throw Unsafe.throwException(exception);
+        }
+    }
+
+    public static void override(final ClassLoader classLoader, final String name) {
+        try {
+            overridingClasses.put(name.intern(), classLoader.loadClass(name));
+        } catch (final ClassNotFoundException exception) {
+            throw Unsafe.throwException(exception);
+        }
     }
 
     public Class<?> getLoadedClass(final String name) {
@@ -23,41 +53,41 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
     @Override
     public boolean isClassLoaded(final String name) {
         synchronized (super.getClassLoadingLock(name)) {
-            return super.findLoadedClass(name) != null || Classes.findLoadedClass(Classes.systemClassLoader, name) != null;
+            return super.findLoadedClass(name) != null || Classes.findLoadedClass(preKnotClassLoader, name) != null;
         }
     }
 
     @Override
     public Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
-        synchronized (this.getClassLoadingLock(name)) {
+        synchronized (super.getClassLoadingLock(name)) {
             Class<?> klass;
 
-            if ((klass = this.findLoadedClass(name)) == null && (klass = Classes.findLoadedClass(Classes.systemClassLoader, name)) == null) {
-                    if (!name.startsWith("com.google.gson.") && !name.startsWith("java.")) {
-                        final byte[] input = delegate.getPostMixinClassByteArray(name);
+            if ((klass = overridingClasses.get(name.intern())) == null && (klass = super.findLoadedClass(name)) == null) {
+                if (name.startsWith("com.google.gson.")) {
+                    klass = preKnotClassLoader.loadClass(name);
+                } else {
+                    final byte[] input = delegate.getPostMixinClassByteArray(name);
 
-                        if (input != null) {
-                            final int pkgDelimiterPos = name.lastIndexOf('.');
-
-                            if (pkgDelimiterPos > 0) {
-                                final String pkgString = name.substring(0, pkgDelimiterPos);
-
-                                if (super.getPackage(pkgString) == null) {
-                                    super.definePackage(pkgString, null, null, null, null, null, null, null);
-                                }
-                            }
-
-                            klass = super.defineClass(name, input, 0, input.length, delegate.getMetadata(name, parent.getResource(delegate.getClassFileName(name))).codeSource);
-                        } else {
-                            klass = Classes.systemClassLoader.loadClass(name);
-                        }
+                    if (input == null) {
+                        klass = preKnotClassLoader.loadClass(name);
                     } else {
-                        klass = Classes.systemClassLoader.loadClass(name);
+                        final int packageEnd = name.lastIndexOf('.');
+
+                        if (packageEnd > 0) {
+                            final String packageName = name.substring(0, packageEnd);
+
+                            if (super.getPackage(packageName) == null) {
+                                super.definePackage(packageName, null, null, null, null, null, null, null);
+                            }
+                        }
+
+                        klass = super.defineClass(name, input, 0, input.length, delegate.getMetadata(name, parent.getResource(delegate.getClassFileName(name))).codeSource);
                     }
+                }
             }
 
             if (resolve) {
-                this.resolveClass(klass);
+                super.resolveClass(klass);
             }
 
             return klass;
@@ -65,15 +95,19 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
     }
 
     static {
+        for (final String klass : System.clearProperty(GrossFabricHacks.Common.CLASS_PROPERTY).split(GrossFabricHacks.Common.CLASS_DELIMITER)) {
+            override(klass);
+        }
+
         final KnotClassLoader knotClassLoader = (KnotClassLoader) Thread.currentThread().getContextClassLoader();
-
         parent = (URLClassLoader) knotClassLoader.getParent();
-        dummyClassLoader = parent.getParent();
-        delegate = knotClassLoader.getDelegate();
-        instance = Classes.setClass(knotClassLoader, UnsafeKnotClassLoader.class);
 
-        Classes.addSystemURL(parent.getURLs());
-        Classes.setClass(delegate, EarlyKnotClassDelegate.class);
+        dummyClassLoader = parent.getParent();
+
+        Classes.addURL(preKnotClassLoader, parent.getURLs());
+
+        delegate = Classes.setClass(knotClassLoader.getDelegate(), EarlyKnotClassDelegate.class);
+        instance = Classes.setClass(knotClassLoader, UnsafeKnotClassLoader.class);
 
         Reflect.defaultClassLoader = instance;
     }

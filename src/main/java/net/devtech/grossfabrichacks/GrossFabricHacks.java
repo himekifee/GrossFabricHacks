@@ -4,22 +4,23 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.security.ProtectionDomain;
+import java.security.SecureClassLoader;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
-import net.devtech.grossfabrichacks.reload.GrossFabricHacksReloadException;
 import net.devtech.grossfabrichacks.reload.Reloader;
+import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
+import net.devtech.grossfabrichacks.unsafe.UnsafeUtil;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.gui.FabricGuiEntry;
-import net.fabricmc.loader.launch.common.FabricLauncher;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 import net.gudenau.lib.unsafe.Unsafe;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -28,17 +29,30 @@ import user11681.dynamicentry.DynamicEntry;
 
 @SuppressWarnings("ConstantConditions")
 public class GrossFabricHacks implements LanguageAdapter {
-    private static final Logger LOGGER = LogManager.getLogger("GrossFabricHacks");
+    private static final Logger logger = LogManager.getLogger("GrossFabricHacks");
 
     @Override
     public native <T> T create(ModContainer mod, String value, Class<T> type);
 
     /**
-     * This class is intended to be loaded by the system class loader so that classes loaded by different class loaders may share information.
-     * It should be safe to load from any class loader after it is loaded by the system class loader.
+     * This class is intended to be loaded by the class loader that loaded {@linkplain net.fabricmc.loader.launch.knot.KnotClassLoader KnotClassLoader}<br>
+     * so that classes loaded by different class loaders may share information.<br>
+     * It may also be used for storing constants.<br>
+     * It should be safe to load from {@link Common#preKnotClassLoader} and {@linkplain net.fabricmc.loader.launch.knot.KnotClassLoader KnotClassLoader}.
      */
+    @SuppressWarnings("JavadocReference")
     public static class Common {
-        public static final String reloadedProperty = "gfh.reloaded";
+        /**
+         * the system property that indicates whether a {@linkplain Reloader#launchMain(ClassLoader)} reload} has occurred or not
+         */
+        public static final String RELOADED_PROPERTY = "gfh.reloaded";
+
+        /**
+         * the system property used temporarily for transferring information about<br>
+         * the classes that have to be checked in {@linkplain UnsafeKnotClassLoader#preKnotClassLoader} first
+         */
+        public static final String CLASS_PROPERTY = "gfh.elementary.classes";
+        public static final String CLASS_DELIMITER = ",";
 
         public static boolean mixinLoaded;
         public static boolean shouldHackMixin;
@@ -95,50 +109,39 @@ public class GrossFabricHacks implements LanguageAdapter {
         public static void crash(final Throwable throwable) {
             throwable.printStackTrace();
 
-            FabricGuiEntry.displayCriticalError(new GrossFabricHacksReloadException(throwable), true);
-
-            System.exit(-1);
+            FabricGuiEntry.displayCriticalError(new RuntimeException("GrossFabricHacks encountered an error. Report it along with a log to https://github.com/user11681/issues", throwable), true);
         }
     }
 
     static {
-        LOGGER.info("no good? no, this man is definitely up to evil.");
+        logger.info("no good? no, this man is definitely up to evil.");
 
-        try {
-            final FabricLauncher launcher = FabricLauncherBase.getLauncher();
-            final ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
-            final ProtectionDomain protectionDomain = GrossFabricHacks.class.getProtectionDomain();
-            final String[] classes = {
-                "net.gudenau.lib.unsafe.Unsafe",
-                "user11681.reflect.Accessor",
-                "user11681.reflect.Invoker",
-                "user11681.reflect.Classes",
-                "user11681.reflect.Fields",
-                "user11681.reflect.Reflect",
-                "net.devtech.grossfabrichacks.unsafe.UnsafeUtil",
-                "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",
-                "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
-                "net.devtech.grossfabrichacks.GrossFabricHacks$Common",
-                "net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader"
-            };
+        final String[] primaryClasses = new String[]{
+            "net.gudenau.lib.unsafe.Unsafe",
+            "user11681.reflect.Accessor",
+            "user11681.reflect.Classes",
+            "user11681.reflect.Fields",
+            "user11681.reflect.Reflect",
+            "user11681.reflect.Invoker",
+            "net.devtech.grossfabrichacks.unsafe.UnsafeUtil",
+            "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",
+            "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
+            "net.devtech.grossfabrichacks.transformer.TransformerApi",
+            "net.devtech.grossfabrichacks.instrumentation.InstrumentationApi",
+            "net.devtech.grossfabrichacks.GrossFabricHacks$Common"
+        };
 
-            final int totalClassCount = classes.length;
-            final int definedClassCount = FabricLoader.getInstance().isDevelopmentEnvironment() ? 6 : 0;
+        System.setProperty(Common.CLASS_PROPERTY, String.join(Common.CLASS_DELIMITER, primaryClasses));
 
-            for (int i = definedClassCount; i < totalClassCount; i++) {
-                final String name = classes[i];
-                final byte[] bytecode = launcher.getClassByteArray(name, true);
-                final Class<?> klass = Unsafe.defineClass(name, bytecode, 0, bytecode.length, systemClassLoader, protectionDomain);
+        final ClassLoader preKnotClassLoader = ((SecureClassLoader) GrossFabricHacks.class.getClassLoader()).getClass().getClassLoader();
 
-                if (i == totalClassCount - 1) {
-                    Unsafe.ensureClassInitialized(klass);
-                }
-            }
-        } catch (final Throwable throwable) {
-            Common.crash(throwable);
+        for (int i = FabricLauncherBase.getLauncher().isDevelopment() ? 6 : 0, length = primaryClasses.length; i < length; i++) {
+            UnsafeUtil.findClass(primaryClasses[i], preKnotClassLoader);
         }
 
-        Reloader.ensureReloaded();
+        Unsafe.ensureClassInitialized(UnsafeUtil.findClass("net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader", preKnotClassLoader));
+
+        TransformerApi.registerPostMixinAsmClassTransformer(klass -> logger.info(klass.name));
 
         DynamicEntry.tryExecute("gfh:prePrePreLaunch", PrePrePreLaunch.class, PrePrePreLaunch::onPrePrePreLaunch);
     }

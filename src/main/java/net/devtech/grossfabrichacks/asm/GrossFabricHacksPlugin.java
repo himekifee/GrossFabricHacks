@@ -1,4 +1,4 @@
-package net.devtech.grossfabrichacks.mixin;
+package net.devtech.grossfabrichacks.asm;
 
 import java.util.List;
 import java.util.Set;

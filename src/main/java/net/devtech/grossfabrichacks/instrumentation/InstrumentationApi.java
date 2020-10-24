@@ -186,13 +186,13 @@ public class InstrumentationApi {
     }
 
     static {
-        if (UnsafeKnotClassLoader.instance.isClassLoaded("net.devtech.grossfabrichacks.instrumentation") && InstrumentationAgent.instrumentation == null) {
+        if (!UnsafeKnotClassLoader.instance.isClassLoaded("net.devtech.grossfabrichacks.instrumentation") || InstrumentationAgent.instrumentation == null) {
             final File agent = GrossFabricHacks.Common.getAgent();
             final String name = ManagementFactory.getRuntimeMXBean().getName();
 
             ByteBuddyAgent.attach(agent, name.substring(0, name.indexOf('@')));
 
-             agent.delete();
+            agent.delete();
         }
 
         instrumentation = InstrumentationAgent.instrumentation;

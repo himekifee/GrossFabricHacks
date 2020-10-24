@@ -136,7 +136,6 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
         }
 
         return bytecode;
-
     }
 
     static {
@@ -145,6 +144,6 @@ public class EarlyKnotClassDelegate extends KnotClassDelegate {
         development = loader.isDevelopmentEnvironment();
         environment = loader.getEnvironmentType();
         canTransformClass = Invoker.findStatic(superclass, "canTransformClass", MethodType.methodType(boolean.class, String.class));
-        provider = Accessor.getObject(UnsafeKnotClassLoader.delegate, "provider");
+        provider = Accessor.getObject(((KnotClassLoader) Thread.currentThread().getContextClassLoader()).getDelegate(), "provider");
     }
 }

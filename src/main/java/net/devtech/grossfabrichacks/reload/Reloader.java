@@ -29,10 +29,10 @@ import user11681.reflect.Reflect;
 @Experimental
 @SuppressWarnings("ConfusingArgumentToVarargsMethod")
 public class Reloader {
-    private static final Logger logger = LogManager.getLogger("SameProcessRelauncher");
+    private static final Logger logger = LogManager.getLogger("Reloader");
 
     public static boolean isReloaded() {
-        return Boolean.getBoolean(GrossFabricHacks.Common.reloadedProperty);
+        return Boolean.getBoolean(GrossFabricHacks.Common.RELOADED_PROPERTY);
     }
 
     public static void ensureReloaded() {
@@ -66,7 +66,7 @@ public class Reloader {
     }
 
     public static SecureClassLoader getNewLoader() {
-        logger.info("Commence same-process reload.");
+        logger.info("Commence reload.");
 
         try {
             // close the in-memory file system to avoid later collision
@@ -146,7 +146,7 @@ public class Reloader {
 
             System.exit(0);
         } catch (final Throwable throwable) {
-            GrossFabricHacks.Common.crash(throwable);
+            GrossFabricHacks.Common.crash(new RuntimeException("Reloading did not succeed.", throwable));
         }
     }
 }

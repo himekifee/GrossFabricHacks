@@ -8,7 +8,7 @@ import user11681.dynamicentry.DynamicEntry;
 
 public class GFHMain {
     public static void main(final String[] args) {
-        System.setProperty(GrossFabricHacks.Common.reloadedProperty, "true");
+        System.setProperty(GrossFabricHacks.Common.RELOADED_PROPERTY, "true");
 
         if (System.getProperty("fabric.side").equals("client")) {
             KnotClient.main(args);

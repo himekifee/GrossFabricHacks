@@ -3,6 +3,7 @@ package net.devtech.grossfabrichacks.transformer;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
+import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.transformer.HackedMixinTransformer;
@@ -17,7 +18,7 @@ public class TransformerApi {
 	 */
 	public static void manualLoad() {
 		if (GrossFabricHacks.Common.mixinLoaded) {
-			Classes.load(Classes.systemClassLoader, "org.spongepowered.asm.mixin.transformer.HackedMixinTransformer");
+			Classes.load(UnsafeKnotClassLoader.preKnotClassLoader, "org.spongepowered.asm.mixin.transformer.HackedMixinTransformer");
 		} else {
 			GrossFabricHacks.Common.shouldHackMixin = true;
 		}
