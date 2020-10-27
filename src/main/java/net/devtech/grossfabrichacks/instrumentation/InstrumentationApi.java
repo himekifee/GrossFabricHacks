@@ -9,7 +9,6 @@ import java.util.Set;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.TransformerApi;
-import net.devtech.grossfabrichacks.transformer.asm.AsmInstrumentationTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 import net.gudenau.lib.unsafe.Unsafe;

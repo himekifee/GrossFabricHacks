@@ -1,5 +1,6 @@
-package net.devtech.grossfabrichacks.transformer.asm;
+package net.devtech.grossfabrichacks.instrumentation;
 
+import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;

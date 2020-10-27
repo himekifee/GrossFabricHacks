@@ -126,6 +126,7 @@ public class GrossFabricHacks implements LanguageAdapter {
             "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",
             "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
             "net.devtech.grossfabrichacks.transformer.TransformerApi",
+            "net.devtech.grossfabrichacks.instrumentation.AsmInstrumentationTransformer",
             "net.devtech.grossfabrichacks.instrumentation.InstrumentationApi",
             "net.devtech.grossfabrichacks.GrossFabricHacks$Common"
         };
