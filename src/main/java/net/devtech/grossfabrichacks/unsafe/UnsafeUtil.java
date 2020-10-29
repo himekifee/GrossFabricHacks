@@ -167,7 +167,7 @@ public class UnsafeUtil {
         try {
             final byte[] bytecode = launcher.getClassByteArray(binaryName, false);
 
-            return Unsafe.defineClass(binaryName, bytecode, 0, bytecode.length, loader, null);
+            return Unsafe.defineClass(binaryName, bytecode, 0, bytecode.length, loader, UnsafeUtil.class.getProtectionDomain());
         } catch (final IOException exception) {
             throw Unsafe.throwException(exception);
         }

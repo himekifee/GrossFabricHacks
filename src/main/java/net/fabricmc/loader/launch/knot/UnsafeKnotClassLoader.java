@@ -104,7 +104,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
 
         dummyClassLoader = parent.getParent();
 
-        Classes.addURL(preKnotClassLoader, parent.getURLs());
+        Classes.addURL(preKnotClassLoader, UnsafeKnotClassLoader.class.getProtectionDomain().getCodeSource().getLocation());
 
         delegate = Classes.setClass(knotClassLoader.getDelegate(), EarlyKnotClassDelegate.class);
         instance = Classes.setClass(knotClassLoader, UnsafeKnotClassLoader.class);

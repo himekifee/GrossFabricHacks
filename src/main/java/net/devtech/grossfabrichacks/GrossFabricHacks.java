@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.security.SecureClassLoader;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
@@ -106,8 +105,6 @@ public class GrossFabricHacks implements LanguageAdapter {
         }
 
         public static void crash(final Throwable throwable) {
-            throwable.printStackTrace();
-
             FabricGuiEntry.displayCriticalError(new RuntimeException("GrossFabricHacks encountered an error. Report it along with a log to https://github.com/user11681/issues", throwable), true);
         }
     }
@@ -133,7 +130,7 @@ public class GrossFabricHacks implements LanguageAdapter {
 
         System.setProperty(Common.CLASS_PROPERTY, String.join(Common.CLASS_DELIMITER, primaryClasses));
 
-        final ClassLoader preKnotClassLoader = ((SecureClassLoader) GrossFabricHacks.class.getClassLoader()).getClass().getClassLoader();
+        final ClassLoader preKnotClassLoader = GrossFabricHacks.class.getClassLoader().getClass().getClassLoader();
 
         for (int i = FabricLauncherBase.getLauncher().isDevelopment() ? 6 : 0, length = primaryClasses.length; i < length; i++) {
             UnsafeUtil.findClass(primaryClasses[i], preKnotClassLoader);
