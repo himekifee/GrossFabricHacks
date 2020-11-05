@@ -2,6 +2,7 @@ package net.devtech.grossfabrichacks.unsafe;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import net.gudenau.lib.unsafe.Unsafe;
 import user11681.reflect.Classes;
@@ -169,7 +170,7 @@ public class UnsafeUtil {
 
             return Unsafe.defineClass(binaryName, bytecode, 0, bytecode.length, loader, UnsafeUtil.class.getProtectionDomain());
         } catch (final IOException exception) {
-            throw Unsafe.throwException(exception);
+            throw GrossFabricHacks.Common.crash(exception);
         }
     }
 

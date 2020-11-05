@@ -47,7 +47,7 @@ public class InstrumentationApi {
         try {
             retransform(Class.forName(cls), transformer);
         } catch (final ClassNotFoundException exception) {
-            throw Unsafe.throwException(exception);
+            throw GrossFabricHacks.Common.crash(exception);
         }
     }
 
@@ -68,7 +68,7 @@ public class InstrumentationApi {
         try {
             retransform(Class.forName(cls), transformer);
         } catch (final ClassNotFoundException exception) {
-            throw Unsafe.throwException(exception);
+            throw GrossFabricHacks.Common.crash(exception);
         }
     }
 
@@ -93,7 +93,7 @@ public class InstrumentationApi {
             instrumentation.retransformClasses(cls);
             instrumentation.removeTransformer(fileTransformer);
         } catch (UnmodifiableClassException e) {
-            throw Unsafe.throwException(e);
+            throw GrossFabricHacks.Common.crash(e);
         }
     }
 
@@ -125,7 +125,7 @@ public class InstrumentationApi {
         try {
             instrumentation.retransformClasses(classes);
         } catch (final UnmodifiableClassException exception) {
-            throw Unsafe.throwException(exception);
+            throw GrossFabricHacks.Common.crash(exception);
         }
 
         return transformer.bytecode;
@@ -139,7 +139,7 @@ public class InstrumentationApi {
         try {
             instrumentation.retransformClasses(klass);
         } catch (final UnmodifiableClassException exception) {
-            throw Unsafe.throwException(exception);
+            throw GrossFabricHacks.Common.crash(exception);
         }
 
         instrumentation.removeTransformer(transformer);

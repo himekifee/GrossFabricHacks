@@ -104,8 +104,10 @@ public class GrossFabricHacks implements LanguageAdapter {
                 : "net.fabricmc.loader.launch.knot.KnotServer";
         }
 
-        public static void crash(final Throwable throwable) {
-            FabricGuiEntry.displayCriticalError(new RuntimeException("GrossFabricHacks encountered an error. Report it along with a log to https://github.com/user11681/issues", throwable), true);
+        public static RuntimeException crash(final Throwable throwable) {
+            FabricGuiEntry.displayCriticalError(new RuntimeException("GrossFabricHacks encountered an error. Report it along with a log to https://github.com/user11681/GrossFabricHacks/issues", throwable), true);
+
+            return new RuntimeException(throwable);
         }
     }
 

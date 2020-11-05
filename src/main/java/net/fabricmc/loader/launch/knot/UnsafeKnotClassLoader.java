@@ -5,7 +5,6 @@ import java.net.URLClassLoader;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.game.GameProvider;
-import net.gudenau.lib.unsafe.Unsafe;
 import user11681.reflect.Classes;
 import user11681.reflect.Reflect;
 
@@ -34,7 +33,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
         try {
             overridingClasses.put(name.intern(), preKnotClassLoader.loadClass(name));
         } catch (final ClassNotFoundException exception) {
-            throw Unsafe.throwException(exception);
+            throw GrossFabricHacks.Common.crash(exception);
         }
     }
 
@@ -42,7 +41,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
         try {
             overridingClasses.put(name.intern(), classLoader.loadClass(name));
         } catch (final ClassNotFoundException exception) {
-            throw Unsafe.throwException(exception);
+            throw GrossFabricHacks.Common.crash(exception);
         }
     }
 
@@ -99,16 +98,14 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
             override(klass);
         }
 
-        final KnotClassLoader knotClassLoader = (KnotClassLoader) Thread.currentThread().getContextClassLoader();
-        parent = (URLClassLoader) knotClassLoader.getParent();
+        Reflect.defaultClassLoader = Thread.currentThread().getContextClassLoader();
 
+        parent = (URLClassLoader) Reflect.defaultClassLoader.getParent();
         dummyClassLoader = parent.getParent();
 
         Classes.addURL(preKnotClassLoader, UnsafeKnotClassLoader.class.getProtectionDomain().getCodeSource().getLocation());
 
-        delegate = Classes.setClass(knotClassLoader.getDelegate(), EarlyKnotClassDelegate.class);
-        instance = Classes.setClass(knotClassLoader, UnsafeKnotClassLoader.class);
-
-        Reflect.defaultClassLoader = instance;
+        delegate = Classes.setClass(((KnotClassLoader) Reflect.defaultClassLoader).getDelegate(), EarlyKnotClassDelegate.class);
+        instance = Classes.setClass(Reflect.defaultClassLoader, UnsafeKnotClassLoader.class);
     }
 }

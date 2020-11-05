@@ -120,7 +120,7 @@ public class Reloader {
 
             return newAppClassLoader;
         } catch (final Throwable throwable) {
-            throw Unsafe.throwException(throwable);
+            throw GrossFabricHacks.Common.crash(throwable);
         }
     }
 
@@ -134,7 +134,7 @@ public class Reloader {
         try {
             ((Closeable) (Accessor.getObject(ModResolver.class, "inMemoryFs"))).close();
         } catch (final IOException exception) {
-            throw Unsafe.throwException(exception);
+            throw GrossFabricHacks.Common.crash(exception);
         }
 
         System.setProperty("fabric.side", FabricLoader.getInstance().getEnvironmentType().name().toLowerCase(Locale.ROOT));

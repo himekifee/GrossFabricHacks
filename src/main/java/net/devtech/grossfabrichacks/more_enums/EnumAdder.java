@@ -1,28 +1,21 @@
 package net.devtech.grossfabrichacks.more_enums;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import net.gudenau.lib.unsafe.Unsafe;
+import user11681.reflect.Fields;
+import user11681.reflect.Invoker;
 
 public class EnumAdder {
 	private static final Field ENUM_CONSTANT_DIRECTORY;
 	private static final Field ENUM_CONSTANTS;
 	private static final Field CONSTRUCTOR_ACCESSOR;
-	private static final Method AQUIRE_CONSTRUCTOR_ACCESSOR;
+	private static final MethodHandle AQUIRE_CONSTRUCTOR_ACCESSOR;
 	static {
-		try {
-			ENUM_CONSTANT_DIRECTORY = Class.class.getDeclaredField("enumConstantDirectory");
-			ENUM_CONSTANT_DIRECTORY.setAccessible(true);
-			ENUM_CONSTANTS = Class.class.getDeclaredField("enumConstants");
-			ENUM_CONSTANTS.setAccessible(true);
-			CONSTRUCTOR_ACCESSOR = Constructor.class.getDeclaredField("constructorAccessor");
-			CONSTRUCTOR_ACCESSOR.setAccessible(true);
-			AQUIRE_CONSTRUCTOR_ACCESSOR = Constructor.class.getDeclaredMethod("acquireConstructorAccessor");
-			AQUIRE_CONSTRUCTOR_ACCESSOR.setAccessible(true);
-		} catch (ReflectiveOperationException e) {
-			throw Unsafe.throwException(e);
-		}
+		ENUM_CONSTANT_DIRECTORY = Fields.getRawField(Class.class, "enumConstantDirectory");
+		ENUM_CONSTANTS = Fields.getRawField(Class.class, "enumConstants");
+		CONSTRUCTOR_ACCESSOR = Fields.getRawField(Constructor.class, "constructorAccessor");
+		AQUIRE_CONSTRUCTOR_ACCESSOR = Invoker.unreflect(Constructor.class, "acquireConstructorAccessor");
 	}
 
 	/**
@@ -52,14 +45,13 @@ public class EnumAdder {
 				return instance;
 			}
 		} catch (ReflectiveOperationException e) {
-			throw Unsafe.throwException(e);
+			throw GrossFabricHacks.Common.crash(e);
 		}
 	}
 
 	*/
 /**
 	 * hahahyes brute force activated
-	 *//*
 
 	public static <T> T brute(Class<T> type, Object... args) {
 		T instance = null;
@@ -84,5 +76,5 @@ public class EnumAdder {
 		if(accessor != null) return accessor;
 		return (ConstructorAccessor) AQUIRE_CONSTRUCTOR_ACCESSOR.invoke(ctor);
 	}
-*/
+ */
 }

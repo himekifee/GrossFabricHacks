@@ -66,7 +66,7 @@ public class DelegatingClassLoader {
 
             Classes.setClass(preKnotClassLoader, Classes.defineClass(knotClassLoader, preKnotClassLoaderName.replace('/', '.'), writer.toByteArray(), preKnotClassLoader.getClass().getProtectionDomain()));
         } catch (final Throwable throwable) {
-            throw Unsafe.throwException(throwable);
+            throw GrossFabricHacks.Common.crash(throwable);
         }
     }
 }

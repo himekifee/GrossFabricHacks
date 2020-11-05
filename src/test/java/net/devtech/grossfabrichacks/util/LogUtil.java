@@ -76,7 +76,7 @@ public class LogUtil {
                 test.accept(i);
             }
         } catch (final Throwable throwable) {
-            throw Unsafe.throwException(throwable);
+            throw GrossFabricHacks.Common.crash(throwable);
         }
 
         return (System.nanoTime() - start) / 1000000000D;
