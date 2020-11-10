@@ -91,7 +91,7 @@ public class GrossFabricHacks implements LanguageAdapter {
 
                     agentJar.close();
                 } catch (final IOException exception) {
-                    crash(exception);
+                    throw crash(exception);
                 }
             }
 

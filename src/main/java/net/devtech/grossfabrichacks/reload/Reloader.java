@@ -15,7 +15,6 @@ import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.discovery.ModResolver;
 import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
-import net.gudenau.lib.unsafe.Unsafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.ApiStatus.Experimental;
@@ -146,7 +145,7 @@ public class Reloader {
 
             System.exit(0);
         } catch (final Throwable throwable) {
-            GrossFabricHacks.Common.crash(new RuntimeException("Reloading did not succeed.", throwable));
+            throw GrossFabricHacks.Common.crash(new RuntimeException("Reloading did not succeed.", throwable));
         }
     }
 }
