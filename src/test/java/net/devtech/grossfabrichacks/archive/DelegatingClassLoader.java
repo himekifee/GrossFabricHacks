@@ -1,6 +1,6 @@
 package net.devtech.grossfabrichacks.archive;
 
-import net.gudenau.lib.unsafe.Unsafe;
+import net.devtech.grossfabrichacks.GrossFabricHacks;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;

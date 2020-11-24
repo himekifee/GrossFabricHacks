@@ -34,6 +34,7 @@ dependencies {
     // extraLibs files("${System.getProperty('java.home')}/../lib/tools.jar")
 
     modApi("user11681:narratoroff:+")
+    modApi("user11681:noauth:+")
 
     modApi(include("net.bytebuddy:byte-buddy-agent:+"))
     modApi(include("net.gudenau.lib:unsafe:+"))

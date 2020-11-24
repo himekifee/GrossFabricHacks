@@ -11,7 +11,6 @@ import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
-import net.gudenau.lib.unsafe.Unsafe;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -92,8 +91,8 @@ public class InstrumentationApi {
             instrumentation.addTransformer(fileTransformer, true);
             instrumentation.retransformClasses(cls);
             instrumentation.removeTransformer(fileTransformer);
-        } catch (UnmodifiableClassException e) {
-            throw GrossFabricHacks.Common.crash(e);
+        } catch (final UnmodifiableClassException exception) {
+            throw GrossFabricHacks.Common.crash(exception);
         }
     }
 
@@ -150,6 +149,7 @@ public class InstrumentationApi {
     // to seperate out the static block
     private static class Transformable {
         private static boolean init;
+
         private static final CompatibilityClassFileTransformer TRANSFORMER = (loader, className, classBeingRedefined, protectionDomain, classfileBuffer) -> {
             ClassReader reader = new ClassReader(classfileBuffer);
             ClassNode node = new ClassNode();
@@ -185,7 +185,7 @@ public class InstrumentationApi {
     }
 
     static {
-        if (!UnsafeKnotClassLoader.instance.isClassLoaded("net.devtech.grossfabrichacks.instrumentation") || InstrumentationAgent.instrumentation == null) {
+        if (!UnsafeKnotClassLoader.instance.isClassLoaded(InstrumentationAgent.NAME) || InstrumentationAgent.instrumentation == null) {
             final File agent = GrossFabricHacks.Common.getAgent();
             final String name = ManagementFactory.getRuntimeMXBean().getName();
 

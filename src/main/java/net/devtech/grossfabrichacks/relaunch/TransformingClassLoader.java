@@ -1,4 +1,4 @@
-package net.devtech.grossfabrichacks.reload;
+package net.devtech.grossfabrichacks.relaunch;
 
 import java.net.URL;
 import java.net.URLClassLoader;

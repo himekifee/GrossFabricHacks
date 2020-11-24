@@ -1,23 +1,21 @@
-package net.devtech.grossfabrichacks.reload;
+package net.devtech.grossfabrichacks.archive;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.security.AccessControlContext;
 import java.security.SecureClassLoader;
 import java.util.Locale;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
+import net.devtech.grossfabrichacks.relaunch.Relauncher;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.discovery.ModResolver;
 import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.ApiStatus.Experimental;
 import user11681.reflect.Accessor;
 import user11681.reflect.Classes;
 import user11681.reflect.Fields;
@@ -25,43 +23,18 @@ import user11681.reflect.Invoker;
 import user11681.reflect.Reflect;
 
 // Do not reload in production.
-@Experimental
 @SuppressWarnings("ConfusingArgumentToVarargsMethod")
-public class Reloader {
+public class ClassLoaderReloader {
     private static final Logger logger = LogManager.getLogger("Reloader");
 
     public static boolean isReloaded() {
-        return Boolean.getBoolean(GrossFabricHacks.Common.RELOADED_PROPERTY);
+        return Boolean.getBoolean(Relauncher.RELAUNCHED_PROPERTY);
     }
 
     public static void ensureReloaded() {
         if (!isReloaded()) {
             launchMain();
         }
-    }
-
-    public static ObjectArrayList<String> getGameArguments() {
-        try {
-            Class.forName("org.multimc.EntryPoint");
-
-            // replace MultiMC's entrypoint with Fabric's
-            final ObjectArrayList<String> mainArgs = ObjectArrayList.wrap(new String[2], 0);
-
-            // set entrypoint
-            mainArgs.add(GrossFabricHacks.Common.getMainClass());
-
-            // get arguments
-            // add arguments
-            mainArgs.addElements(mainArgs.size(), FabricLoader.getInstance().getLaunchArguments(false));
-
-            return mainArgs;
-        } catch (final ClassNotFoundException exception) {
-            return ObjectArrayList.wrap(System.getProperty("sun.java.command").split(" "));
-        }
-    }
-
-    public static ObjectArrayList<String> getVMArguments() {
-        return ObjectArrayList.wrap(ManagementFactory.getRuntimeMXBean().getInputArguments().toArray(new String[0]));
     }
 
     public static SecureClassLoader getNewLoader() {
@@ -141,7 +114,7 @@ public class Reloader {
         Thread.currentThread().setContextClassLoader(newLoader);
 
         try {
-            Invoker.findStatic(newLoader.loadClass("net.devtech.grossfabrichacks.reload.GFHMain"), "main", void.class, String[].class).invokeExact(FabricLoader.getInstance().getLaunchArguments(false));
+            Invoker.findStatic(newLoader.loadClass("net.devtech.grossfabrichacks.relaunch.Main"), "main", void.class, String[].class).invokeExact(FabricLoader.getInstance().getLaunchArguments(false));
 
             System.exit(0);
         } catch (final Throwable throwable) {

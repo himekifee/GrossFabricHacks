@@ -4,11 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.function.Consumer;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
-import net.devtech.grossfabrichacks.reload.Reloader;
+import net.devtech.grossfabrichacks.entrypoints.RelaunchEntrypoint;
+import net.devtech.grossfabrichacks.relaunch.Relauncher;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.devtech.grossfabrichacks.unsafe.UnsafeUtil;
@@ -40,11 +42,6 @@ public class GrossFabricHacks implements LanguageAdapter {
      */
     @SuppressWarnings("JavadocReference")
     public static class Common {
-        /**
-         * the system property that indicates whether a {@linkplain Reloader#launchMain(ClassLoader)} reload} has occurred or not
-         */
-        public static final String RELOADED_PROPERTY = "gfh.reloaded";
-
         /**
          * the system property used temporarily for transferring information about<br>
          * the classes that have to be checked in {@linkplain UnsafeKnotClassLoader#preKnotClassLoader} first
@@ -111,8 +108,21 @@ public class GrossFabricHacks implements LanguageAdapter {
         }
     }
 
+    private static void handleEntrypoint(final RelaunchEntrypoint entrypoint) {
+        if (entrypoint.shouldRelaunch()) {
+            Relauncher.ensureRelaunched();
+        }
+    }
+
     static {
         logger.info("no good? no, this man is definitely up to evil.");
+
+        if (!Relauncher.relaunched()) {
+            final Consumer<RelaunchEntrypoint> handler = GrossFabricHacks::handleEntrypoint;
+
+            DynamicEntry.execute("gfh:prePrePrePreLaunch", RelaunchEntrypoint.class, handler);
+            DynamicEntry.execute("gfh:relaunchEntrypoint", RelaunchEntrypoint.class, handler);
+        }
 
         final String[] primaryClasses = new String[]{
             "net.gudenau.lib.unsafe.Unsafe",

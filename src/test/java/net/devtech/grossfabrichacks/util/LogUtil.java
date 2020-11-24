@@ -1,7 +1,7 @@
 package net.devtech.grossfabrichacks.util;
 
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
-import net.gudenau.lib.unsafe.Unsafe;
+import net.devtech.grossfabrichacks.GrossFabricHacks;
 
 public class LogUtil {
     public static void logMeanTime(final TestInfo... tests) {
