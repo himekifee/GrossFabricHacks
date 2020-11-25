@@ -18,9 +18,10 @@ public interface RawClassTransformer {
 	byte[] transform(String name, byte[] data);
 
 	default RawClassTransformer andThen(RawClassTransformer transfomer) {
-		return (s, d) -> {
-			d = this.transform(s, d);
-			return transfomer.transform(s, d);
+		return (name, data) -> {
+			data = this.transform(name, data);
+
+			return transfomer.transform(name, data);
 		};
 	}
 }

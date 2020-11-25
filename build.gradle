@@ -1,47 +1,46 @@
 plugins {
     id("java-library")
-    id("maven")
     id("maven-publish")
     id("fabric-loom") version("0.5-SNAPSHOT")
     id("com.jfrog.bintray") version("1.8.5")
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
-
 project.group = project.mavenGroup
 project.archivesBaseName = project.baseName
 project.version = project.modVersion
 
-configurations.all {
-    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
-}
+allprojects {
+    apply(plugin: "fabric-loom")
 
-repositories {
-    mavenLocal()
+    sourceCompatibility = 8
+    targetCompatibility = 8
 
-    maven {url = "https://dl.bintray.com/user11681/maven"}
-}
+    repositories {
+        mavenLocal()
 
-dependencies {
-    minecraft("com.mojang:minecraft:${project.minecraftVersion}")
-    mappings("net.fabricmc:yarn:${project.minecraftVersion}+build.${project.yarnBuild}:v2")
-    modImplementation("net.fabricmc:fabric-loader:${project.loaderVersion}")
+        maven {url = "https://dl.bintray.com/user11681/maven"}
+    }
 
-    testImplementation("org.junit.jupiter:junit-jupiter:+")
+    dependencies {
+        minecraft("com.mojang:minecraft:${project.minecraftVersion}")
+        mappings("net.fabricmc:yarn:${project.minecraftVersion}+build.${project.yarnBuild}:v2")
+        modImplementation("net.fabricmc:fabric-loader:${project.loaderVersion}")
 
-    // concern
-    // extraLibs files("${System.getProperty('java.home')}/../lib/tools.jar")
+        testImplementation("org.junit.jupiter:junit-jupiter:+")
 
-    modApi("user11681:narratoroff:+")
-    modApi("user11681:noauth:+")
+        // concern
+        // extraLibs files("${System.getProperty('java.home')}/../lib/tools.jar")
 
-    modApi(include("net.bytebuddy:byte-buddy-agent:+"))
-    modApi(include("net.gudenau.lib:unsafe:+"))
-    modApi(include("user11681:dynamicentry:+"))
-    modApi(include("user11681:reflect:+"))
+        modApi("user11681:narratoroff:+")
+        modApi("user11681:noauth:+")
+
+        modApi(include("net.bytebuddy:byte-buddy-agent:+"))
+        modApi(include("net.gudenau.lib:unsafe:+"))
+        modApi(include("user11681:dynamicentry:+"))
+        modApi(include("user11681:reflect:+"))
 
 //    modApi("net.fabricmc.fabric-api:fabric-api:+")
+    }
 }
 
 processResources {
@@ -79,6 +78,7 @@ jar {
     manifest {
         attributes(
                 "Manifest-Version": "1.0",
+                "Premain-Class": "net.devtech.grossfabrichacks.instrumentation.InstrumentationAgent",
                 "Agent-Class": "net.devtech.grossfabrichacks.instrumentation.InstrumentationAgent",
                 "Can-Retransform-Classes": "true"
         )

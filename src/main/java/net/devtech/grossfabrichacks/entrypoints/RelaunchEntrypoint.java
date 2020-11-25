@@ -9,7 +9,7 @@ package net.devtech.grossfabrichacks.entrypoints;
  * <br>
  * To use, add <tt><br>
  * "entrypoints": [<br>
- * &nbsp;&nbsp;&nbsp;&nbsp;"gfh:relaunchEntrypoint": "your.relaunch.entrypoint.Class"<br>
+ * &nbsp;&nbsp;&nbsp;&nbsp;"gfh:relaunch": "your.relaunch.entrypoint.Class"<br>
  * ]<br></tt> to your <tt>fabric.mod.json</tt>.<br>
  * <br>
  * You can also use {@code gfh:prePrePrePreLaunch} for a more semantic but less

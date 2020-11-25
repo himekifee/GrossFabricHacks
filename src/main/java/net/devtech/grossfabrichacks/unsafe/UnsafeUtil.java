@@ -166,9 +166,13 @@ public class UnsafeUtil {
 
     public static <T> Class<T> findClass(final String binaryName, final ClassLoader loader) {
         try {
-            final byte[] bytecode = launcher.getClassByteArray(binaryName, false);
+            try {
+                return (Class<T>) loader.loadClass(binaryName);
+            } catch (final ClassNotFoundException exception) {
+                final byte[] bytecode = launcher.getClassByteArray(binaryName, false);
 
-            return Unsafe.defineClass(binaryName, bytecode, 0, bytecode.length, loader, UnsafeUtil.class.getProtectionDomain());
+                return Unsafe.defineClass(binaryName, bytecode, 0, bytecode.length, loader, UnsafeUtil.class.getProtectionDomain());
+            }
         } catch (final IOException exception) {
             throw GrossFabricHacks.Common.crash(exception);
         }

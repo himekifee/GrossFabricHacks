@@ -17,7 +17,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
     public static final UnsafeKnotClassLoader instance;
     public static final URLClassLoader parent;
     public static final ClassLoader dummyClassLoader;
-    public static final EarlyKnotClassDelegate delegate;
+    public static final GrossKnotClassDelegate delegate;
 
     public static final Reference2ReferenceOpenHashMap<String, Class<?>> overridingClasses = new Reference2ReferenceOpenHashMap<>();
 
@@ -105,7 +105,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
 
         Classes.addURL(preKnotClassLoader, UnsafeKnotClassLoader.class.getProtectionDomain().getCodeSource().getLocation());
 
-        delegate = Classes.setClass(((KnotClassLoader) Reflect.defaultClassLoader).getDelegate(), EarlyKnotClassDelegate.class);
+        delegate = Classes.setClass(((KnotClassLoader) Reflect.defaultClassLoader).getDelegate(), GrossKnotClassDelegate.class);
         instance = Classes.setClass(Reflect.defaultClassLoader, UnsafeKnotClassLoader.class);
     }
 }

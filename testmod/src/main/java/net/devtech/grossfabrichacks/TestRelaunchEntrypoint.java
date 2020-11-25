@@ -1,7 +1,6 @@
 package net.devtech.grossfabrichacks;
 
 import net.devtech.grossfabrichacks.entrypoints.RelaunchEntrypoint;
-import net.fabricmc.loader.FabricLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

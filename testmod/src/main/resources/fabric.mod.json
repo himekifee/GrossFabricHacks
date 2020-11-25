@@ -1,0 +1,11 @@
+{
+    "schemaVersion": 1,
+    "id": "testmod",
+    "version": "yes",
+    "name": "test mod",
+    "entrypoints": {
+        "gfh:relaunch": [
+            "RelaunchTest"
+        ]
+    }
+}

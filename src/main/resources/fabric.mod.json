@@ -10,11 +10,9 @@
         "Arc'blroth"
     ],
     "contact": {
-        "sources": "https://github.com/Devan-Kerman/Fabric-Transformer"
+        "sources": "https://github.com/Devan-Kerman/GrossFabricHacks"
     },
     "license": "MPLv2",
-    "icon": "assets/grossfabrichacks/icon.png",
-    "environment": "*",
     "depends": {
         "fabricloader": ">=0.9.3+build.207"
     },

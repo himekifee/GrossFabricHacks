@@ -1,22 +1,26 @@
 package net.devtech.grossfabrichacks.relaunch;
 
 import java.util.Arrays;
-import java.util.function.Consumer;
+import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.entrypoints.RelaunchEntrypoint;
-import user11681.dynamicentry.DynamicEntry;
+import org.jetbrains.annotations.ApiStatus.Experimental;
 
+@Experimental
 public class Main {
     public static final String NAME = "net.devtech.grossfabrichacks.relaunch.Main";
 
+    @SuppressWarnings("RedundantClassCall")
     public static void main(final String[] args) throws Throwable {
         System.setProperty(Relauncher.RELAUNCHED_PROPERTY, "true");
 
-        final Consumer<RelaunchEntrypoint> onRelaunch = RelaunchEntrypoint::onRelaunch;
+        final String entrypoints = System.clearProperty(Relauncher.ENTRYPOINT_PROPERTY);
 
-        DynamicEntry.execute("gfh:prePrePrePreLaunch", RelaunchEntrypoint.class, onRelaunch);
-        DynamicEntry.execute("gfh:relaunchEntrypoint", RelaunchEntrypoint.class, onRelaunch);
+        if (entrypoints != null) {
+            for (final String entrypoint : entrypoints.split(GrossFabricHacks.Common.CLASS_DELIMITER)) {
+                RelaunchEntrypoint.class.cast(TransformingClassLoader.instance.loadClass(entrypoint).getDeclaredConstructor().newInstance()).onRelaunch();
+            }
+        }
 
-        Class.forName(args[0]).getDeclaredMethod("main", String[].class).invoke(null, (Object) Arrays.copyOfRange(args, 1, args.length));
+        TransformingClassLoader.instance.loadClass(args[0]).getDeclaredMethod("main", String[].class).invoke(null, (Object) Arrays.copyOfRange(args, 1, args.length));
     }
-
 }

@@ -6,21 +6,51 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
-import java.util.List;
 import java.util.ListIterator;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
+import net.devtech.grossfabrichacks.entrypoints.RelaunchEntrypoint;
 import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.util.SystemProperties;
 import org.apache.logging.log4j.LogManager;
+import org.jetbrains.annotations.ApiStatus.Experimental;
 
+@Experimental
 public class Relauncher {
     /**
      * the system property that indicates whether a {@linkplain #ensureRelaunched() relaunch} has occurred or not
      */
-    public static final String RELAUNCHED_PROPERTY = "gfh.relaunched";
+    public static final String RELAUNCHED_PROPERTY = "gfh.relaunch.relaunched";
+    /**
+     * the system property that contains the names of {@linkplain RelaunchEntrypoint relaunch entrypoint} classes
+     */
+    public static final String ENTRYPOINT_PROPERTY = "gfh.relaunch.entrypoints";
     
     private static final String home = new File(System.getProperty("java.home")).getAbsolutePath();
 
-    public static ObjectArrayList<String> getGameArguments() {
+    public final ObjectArrayList<String> virtualMachineArguments;
+    public final ObjectArrayList<String> programArguments;
+
+    public Relauncher() {
+        this.virtualMachineArguments = getVMArguments();
+
+        final ListIterator<String> iterator = this.virtualMachineArguments.listIterator();
+
+        // remove debugger
+        while (iterator.hasNext()) {
+            final String argument = iterator.next();
+
+            if(argument.startsWith("-agentlib:jdwp") || argument.startsWith("-javaagent")) {
+                iterator.remove();
+            }
+        }
+
+        this.virtualMachineArgument("javaagent:", GrossFabricHacks.Common.getAgent().getAbsolutePath());
+        this.property(SystemProperties.DEVELOPMENT);
+
+        this.programArguments = getProgramArguments();
+    }
+
+    public static ObjectArrayList<String> getProgramArguments() {
         try {
             Class.forName("org.multimc.EntryPoint");
 
@@ -30,7 +60,6 @@ public class Relauncher {
             // set entrypoint
             mainArgs.add(GrossFabricHacks.Common.getMainClass());
 
-            // get arguments
             // add arguments
             mainArgs.addElements(mainArgs.size(), FabricLoader.getInstance().getLaunchArguments(false));
 
@@ -50,37 +79,52 @@ public class Relauncher {
     
     public static void ensureRelaunched() {
         if (!relaunched()) {
-            relaunch();
+            new Relauncher().relaunch();
         }
     }
 
-    public static void relaunch() {
-        relaunch(Main.NAME);
+    public Relauncher mainClass(final String name) {
+        if (name != null && !name.equals(this.programArguments.get(0))) {
+            this.programArguments.add(0, name);
+        }
+
+        return this;
     }
 
-    public static void relaunch(final String mainClass, final String... arguments) {
-        final ObjectArrayList<String> VMArgs = getVMArguments();
-        ListIterator<String> iterator = VMArgs.listIterator();
-        String argument;
+    public Relauncher programArgument(final String argument) {
+        this.programArguments.add(argument);
 
-        // remove debugger
-        while (iterator.hasNext()) {
-            argument = iterator.next();
+        return this;
+    }
 
-            if(argument.startsWith("-agentlib:jdwp") || argument.startsWith("-javaagent")) {
-                iterator.remove();
-            }
-        }
-        
-        VMArgs.add("-javaagent:" + GrossFabricHacks.Common.getAgent());
+    public Relauncher programArgument(final int index, final String argument) {
+        this.programArguments.add(index, argument);
 
-        final List<String> mainArgs = getGameArguments();
+        return this;
+    }
 
-        if (mainClass != null && !mainClass.equals(mainArgs.get(0))) {
-            mainArgs.add(0, mainClass);
-        }
+    public Relauncher property(final String name) {
+        return this.property(name, System.getProperty(name));
+    }
 
-        // remove built-in Java libraries from classpath
+    public Relauncher property(final String name, final String value) {
+        return this.virtualMachineArgument("D", String.format("%s=%s", name, value));
+    }
+
+    public Relauncher virtualMachineArgument(final String argument) {
+        this.virtualMachineArguments.add(argument);
+
+        return this;
+    }
+
+    public Relauncher virtualMachineArgument(final String option, final String argument) {
+        this.virtualMachineArguments.add('-' + option + argument);
+
+        return this;
+    }
+
+    public void relaunch() {
+        // remove built-in Java libraries from class path
         final StringBuilder newClassPath = new StringBuilder();
 
         if (!FabricLoader.getInstance().isDevelopmentEnvironment()) {
@@ -99,11 +143,10 @@ public class Relauncher {
 
         final ReferenceArrayList<String> args = new ReferenceArrayList<>();
         args.add(new File(new File(home, "bin"), "java" + OS.operatingSystem.executableExtension).getAbsolutePath());
-        args.addAll(VMArgs);
+        args.addAll(this.virtualMachineArguments);
         args.add("-cp");
         args.add(newClassPath.toString());
-        args.addAll(mainArgs);
-        args.addElements(args.size(), arguments);
+        args.addAll(this.programArguments);
 
         // release lock on log file
         LogManager.shutdown();

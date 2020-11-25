@@ -5,25 +5,26 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
-public interface AsmInstrumentationTransformer {
+public interface AsmInstrumentationTransformer extends RawClassTransformer {
     void transform(String name, ClassNode node);
 
-    default AsmInstrumentationTransformer andThen(AsmInstrumentationTransformer fixer) {
-        return (s, c) -> {
-            this.transform(s, c);
-            fixer.transform(s, c);
-        };
+    @Override
+    default byte[] transform(String name, byte[] data) {
+        final ClassNode node = new ClassNode();
+        new ClassReader(data).accept(node, 0);
+
+        this.transform(name, node);
+
+        final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+        node.accept(writer);
+
+        return writer.toByteArray();
     }
 
-    default RawClassTransformer asRaw() {
-        return (name, data) -> {
-            ClassReader reader = new ClassReader(data);
-            ClassNode node = new ClassNode();
-            reader.accept(node, 0);
-            this.transform(node.name, node);
-            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-            node.accept(writer);
-            return writer.toByteArray();
+    default AsmInstrumentationTransformer andThen(AsmInstrumentationTransformer fixer) {
+        return (name, node) -> {
+            this.transform(name, node);
+            fixer.transform(name, node);
         };
     }
 }

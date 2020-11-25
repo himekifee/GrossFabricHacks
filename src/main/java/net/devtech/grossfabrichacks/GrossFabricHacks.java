@@ -1,5 +1,6 @@
 package net.devtech.grossfabrichacks;
 
+import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -10,6 +11,7 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
 import net.devtech.grossfabrichacks.entrypoints.RelaunchEntrypoint;
+import net.devtech.grossfabrichacks.relaunch.Main;
 import net.devtech.grossfabrichacks.relaunch.Relauncher;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
@@ -108,20 +110,36 @@ public class GrossFabricHacks implements LanguageAdapter {
         }
     }
 
-    private static void handleEntrypoint(final RelaunchEntrypoint entrypoint) {
-        if (entrypoint.shouldRelaunch()) {
-            Relauncher.ensureRelaunched();
-        }
-    }
-
     static {
         logger.info("no good? no, this man is definitely up to evil.");
 
         if (!Relauncher.relaunched()) {
-            final Consumer<RelaunchEntrypoint> handler = GrossFabricHacks::handleEntrypoint;
+            final ReferenceArrayList<RelaunchEntrypoint> entrypoints = new ReferenceArrayList<>(0);
+            final Consumer<RelaunchEntrypoint> handler = entrypoints::add;
 
             DynamicEntry.execute("gfh:prePrePrePreLaunch", RelaunchEntrypoint.class, handler);
-            DynamicEntry.execute("gfh:relaunchEntrypoint", RelaunchEntrypoint.class, handler);
+            DynamicEntry.execute("gfh:relaunch", RelaunchEntrypoint.class, handler);
+
+            final StringBuilder entrypointNames = new StringBuilder();
+            boolean relaunch = false;
+
+            for (final RelaunchEntrypoint entrypoint : entrypoints) {
+                if (entrypoint.shouldRelaunch()) {
+                    relaunch = true;
+                }
+
+                if (entrypointNames.length() != 0) {
+                    entrypointNames.append(Common.CLASS_DELIMITER);
+                }
+
+                entrypointNames.append(entrypoint.getClass().getName());
+            }
+
+            if (relaunch) {
+                if (!Relauncher.relaunched()) {
+                    new Relauncher().mainClass(Main.NAME).property(Relauncher.ENTRYPOINT_PROPERTY, entrypointNames.toString()).relaunch();
+                }
+            }
         }
 
         final String[] primaryClasses = new String[]{

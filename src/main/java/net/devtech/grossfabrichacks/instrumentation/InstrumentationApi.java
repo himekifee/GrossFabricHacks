@@ -51,7 +51,7 @@ public class InstrumentationApi {
     }
 
     public static void retransform(Class<?> cls, AsmInstrumentationTransformer transformer) {
-        retransform(cls, transformer.asRaw());
+        retransform(cls, (RawClassTransformer) transformer);
     }
 
     /**

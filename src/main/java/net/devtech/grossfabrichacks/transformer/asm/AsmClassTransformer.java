@@ -7,25 +7,26 @@ import org.objectweb.asm.tree.ClassNode;
 /**
  * a transformer using the ASM node
  */
-public interface AsmClassTransformer {
+public interface AsmClassTransformer extends RawClassTransformer {
 	void transform(ClassNode node);
 
-	default AsmClassTransformer andThen(AsmClassTransformer fixer) {
-		return (c) -> {
-			this.transform(c);
-			fixer.transform(c);
-		};
+	@Override
+	default byte[] transform(String name, byte[] data) {
+		final ClassNode node = new ClassNode();
+		new ClassReader(data).accept(node, 0);
+
+		this.transform(node);
+
+		final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+		node.accept(writer);
+
+		return writer.toByteArray();
 	}
 
-	default RawClassTransformer asRaw() {
-		return (name, data) -> {
-			ClassReader reader = new ClassReader(data);
-			ClassNode node = new ClassNode();
-			reader.accept(node, 0);
+	default AsmClassTransformer andThen(AsmClassTransformer fixer) {
+		return (node) -> {
 			this.transform(node);
-			ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-			node.accept(writer);
-			return writer.toByteArray();
+			fixer.transform(node);
 		};
 	}
 }
