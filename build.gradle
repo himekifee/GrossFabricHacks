@@ -9,7 +9,7 @@ project.archivesBaseName = project.baseName
 project.version = project.modVersion
 
 allprojects {
-    apply(plugin: "fabric-loom")
+    plugins.apply("fabric-loom")
 
     sourceCompatibility = 8
     targetCompatibility = 8
