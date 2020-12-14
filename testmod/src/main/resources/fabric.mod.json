@@ -5,7 +5,9 @@
     "name": "test mod",
     "entrypoints": {
         "gfh:relaunch": [
-            "RelaunchTest"
+        ],
+        "gfh:prePrePreLaunch": [
+            "GrossTest"
         ]
     }
 }

@@ -19,7 +19,7 @@ public class HackedMixinTransformer extends MixinTransformer {
     @Override
     public byte[] transformClass(final MixinEnvironment environment, final String name, byte[] classBytes) {
         // raw class patching
-        if (GrossFabricHacks.Common.transformPreMixinRawClass) {
+        if (GrossFabricHacks.Common.preMixinRawClassTransformer != null) {
             classBytes = GrossFabricHacks.Common.preMixinRawClassTransformer.transform(name, classBytes);
         }
 
@@ -31,18 +31,18 @@ public class HackedMixinTransformer extends MixinTransformer {
         final String name = classNode.name;
 
         if (GrossFabricHacks.Common.shouldWrite) {
-            if (GrossFabricHacks.Common.transformPreMixinAsmClass) {
+            if (GrossFabricHacks.Common.preMixinAsmClassTransformer != null) {
                 GrossFabricHacks.Common.preMixinAsmClassTransformer.transform(classNode);
             }
 
             processor.applyMixins(environment, name.replace('/', '.'), classNode);
 
-            if (GrossFabricHacks.Common.transformPostMixinAsmClass) {
+            if (GrossFabricHacks.Common.postMixinAsmClassTransformer != null) {
                 GrossFabricHacks.Common.postMixinAsmClassTransformer.transform(classNode);
             }
 
             // post mixin raw patching
-            if (GrossFabricHacks.Common.transformPostMixinRawClass) {
+            if (GrossFabricHacks.Common.postMixinRawClassTransformer != null) {
                 return GrossFabricHacks.Common.postMixinRawClassTransformer.transform(name, this.writeClass(classNode));
             }
 
@@ -64,7 +64,7 @@ public class HackedMixinTransformer extends MixinTransformer {
 
         // here, we modify the klass pointer in the object to point towards the HackedMixinTransformer class, effectively turning the existing
         // MixinTransformer instance into an instance of HackedMixinTransformer
-        Classes.setClass(mixinTransformer, HackedMixinTransformer.class);
+        Classes.staticCast(mixinTransformer, HackedMixinTransformer.class);
 
         instance = (HackedMixinTransformer) mixinTransformer;
     }

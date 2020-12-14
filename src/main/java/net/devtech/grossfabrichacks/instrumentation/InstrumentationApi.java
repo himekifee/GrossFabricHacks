@@ -6,13 +6,18 @@ import java.lang.instrument.UnmodifiableClassException;
 import java.lang.management.ManagementFactory;
 import java.util.HashSet;
 import java.util.Set;
+
 import net.bytebuddy.agent.ByteBuddyAgent;
+import net.bytebuddy.agent.Installer;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
-import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
+import user11681.reflect.Accessor;
+import user11681.reflect.Classes;
+
+import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 
 public class InstrumentationApi {
     private static final Set<String> transformable = new HashSet<>();
@@ -43,11 +48,7 @@ public class InstrumentationApi {
      * @param transformer the class transformer
      */
     public static void retransform(final String cls, final AsmInstrumentationTransformer transformer) {
-        try {
-            retransform(Class.forName(cls), transformer);
-        } catch (final ClassNotFoundException exception) {
-            throw GrossFabricHacks.Common.crash(exception);
-        }
+        retransform(Classes.load(cls), transformer);
     }
 
     public static void retransform(Class<?> cls, AsmInstrumentationTransformer transformer) {
@@ -64,11 +65,7 @@ public class InstrumentationApi {
      * @param transformer the class transformer
      */
     public static void retransform(final String cls, final RawClassTransformer transformer) {
-        try {
-            retransform(Class.forName(cls), transformer);
-        } catch (final ClassNotFoundException exception) {
-            throw GrossFabricHacks.Common.crash(exception);
-        }
+        retransform(Classes.load(cls), transformer);
     }
 
     /**
@@ -96,38 +93,12 @@ public class InstrumentationApi {
         }
     }
 
-    public static ClassNode[] getNodes(final Class<?>... classes) {
-        final int classCount = classes.length;
-        final ClassNode[] nodes = new ClassNode[classCount];
-        final byte[][] bytes = getBytecode(classes);
-
-        for (int i = 0; i < classCount; i++) {
-            new ClassReader(bytes[i]).accept(nodes[i] = new ClassNode(), 0);
-        }
-
-        return nodes;
-    }
-
     public static ClassNode getNode(final Class<?> klass) {
         final ClassNode node = new ClassNode();
 
         new ClassReader(getBytecode(klass)).accept(node, 0);
 
         return node;
-    }
-
-    public static byte[][] getBytecode(final Class<?>... classes) {
-        final RetainingDummyTransformer transformer = new RetainingDummyTransformer(classes);
-
-        instrumentation.addTransformer(transformer);
-
-        try {
-            instrumentation.retransformClasses(classes);
-        } catch (final UnmodifiableClassException exception) {
-            throw GrossFabricHacks.Common.crash(exception);
-        }
-
-        return transformer.bytecode;
     }
 
     public static byte[] getBytecode(final Class<?> klass) {
@@ -185,15 +156,13 @@ public class InstrumentationApi {
     }
 
     static {
-        if (!UnsafeKnotClassLoader.instance.isClassLoaded(InstrumentationAgent.NAME) || InstrumentationAgent.instrumentation == null) {
+        if (!UnsafeKnotClassLoader.instance.isClassLoaded("net.bytebuddy.agent.Installer") || Accessor.getObject(Installer.class, "instrumentation") == null) {
             final File agent = GrossFabricHacks.Common.getAgent();
-            final String name = ManagementFactory.getRuntimeMXBean().getName();
+            final String processName = ManagementFactory.getRuntimeMXBean().getName();
 
-            ByteBuddyAgent.attach(agent, name.substring(0, name.indexOf('@')));
-
-            agent.delete();
+            ByteBuddyAgent.attach(agent, processName.substring(0, processName.indexOf('@')));
         }
 
-        instrumentation = InstrumentationAgent.instrumentation;
+        instrumentation = Installer.getInstrumentation();
     }
 }

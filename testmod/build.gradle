@@ -1,5 +1,9 @@
+plugins {
+    id("java-library")
+}
+
 dependencies {
-    implementation(project(":"))
+    api(project(":"))
 
     implementation("org.junit.jupiter:junit-jupiter:+")
 }

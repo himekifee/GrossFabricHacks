@@ -1,12 +1,14 @@
 package net.fabricmc.loader.launch.knot;
 
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import java.net.URLClassLoader;
+
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.game.GameProvider;
 import user11681.reflect.Classes;
 import user11681.reflect.Reflect;
+
+import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.game.GameProvider;
 
 @SuppressWarnings("JavadocReference")
 public class UnsafeKnotClassLoader extends KnotClassLoader {
@@ -103,9 +105,9 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
         parent = (URLClassLoader) Reflect.defaultClassLoader.getParent();
         dummyClassLoader = parent.getParent();
 
-        Classes.addURL(preKnotClassLoader, UnsafeKnotClassLoader.class.getProtectionDomain().getCodeSource().getLocation());
+        Classes.addURL(ClassLoader.getSystemClassLoader(), UnsafeKnotClassLoader.class.getProtectionDomain().getCodeSource().getLocation());
 
-        delegate = Classes.setClass(((KnotClassLoader) Reflect.defaultClassLoader).getDelegate(), GrossKnotClassDelegate.class);
-        instance = Classes.setClass(Reflect.defaultClassLoader, UnsafeKnotClassLoader.class);
+        delegate = Classes.staticCast(((KnotClassLoader) Reflect.defaultClassLoader).getDelegate(), GrossKnotClassDelegate.class);
+        instance = Classes.staticCast(Reflect.defaultClassLoader, UnsafeKnotClassLoader.class);
     }
 }

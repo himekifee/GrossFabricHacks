@@ -1,8 +1,7 @@
 plugins {
     id("java-library")
     id("maven-publish")
-    id("fabric-loom") version("0.5-SNAPSHOT")
-    id("com.jfrog.bintray") version("1.8.5")
+    id("fabric-loom").version("0.5-SNAPSHOT")
 }
 
 project.group = project.mavenGroup
@@ -41,89 +40,54 @@ allprojects {
 
 //    modApi("net.fabricmc.fabric-api:fabric-api:+")
     }
-}
 
-processResources {
-    inputs.property "version", project.version
+    processResources {
+        inputs.property("version", project.version)
 
-    from(sourceSets.main.resources.srcDirs) {
-        include "fabric.mod.json"
-        expand "version": project.version
+        from(sourceSets.main.resources.srcDirs) {
+            include("fabric.mod.json")
+            expand("version": project.version)
+        }
+
+        from(sourceSets.main.resources.srcDirs) {
+            exclude("fabric.mod.json")
+        }
     }
-
-    from(sourceSets.main.resources.srcDirs) {
-        exclude "fabric.mod.json"
-    }
-}
 
 // ensure that the encoding is set to UTF-8, no matter what the system default is
 // this fixes some edge cases with special characters not displaying correctly
 // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
+    tasks.withType(JavaCompile) {
+        options.encoding = "UTF-8"
+    }
 }
 
-// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-// if it is present.
-// If you remove this task, sources will not be generated.
-task sourcesJar(type: Jar, dependsOn: classes) {
-    archiveClassifier.set("sources")
-
-    from(sourceSets.main.allSource)
+java {
+    withSourcesJar()
 }
 
 jar {
     from("LICENSE")
-
-    manifest {
-        attributes(
-                "Manifest-Version": "1.0",
-                "Premain-Class": "net.devtech.grossfabrichacks.instrumentation.InstrumentationAgent",
-                "Agent-Class": "net.devtech.grossfabrichacks.instrumentation.InstrumentationAgent",
-                "Can-Retransform-Classes": "true"
-        )
-    }
-}
-
-bintray {
-    user = System.getenv("BINTRAY_USER")
-    key = System.getenv("BINTRAY_API_KEY")
-    publish = true
-    setPublications("maven")
-
-    pkg {
-        repo = "maven"
-        name = project.name
-        licenses = ["LGPL-3.0"]
-        vcsUrl = "https://github.com/user11681/grossfabrichacks.git"
-
-        version {
-            name = project.version
-            released = new Date()
-            githubRepo = "user11681/grossfabrichacks"
-            issueTrackerUrl = "https://github.com/user11681/grossfabrichacks/issues"
-        }
-    }
 }
 
 publishing {
     publications {
         maven(MavenPublication) {
-            groupId(project.group)
-            artifactId(project.name)
-            version(project.version)
+            groupId = project.group
+            artifactId = project.name
+            version = project.version
 
             artifact(remapJar) {
-                builtBy remapJar
+                builtBy(remapJar)
             }
 
             artifact(sourcesJar) {
-                builtBy remapSourcesJar
+                builtBy(remapSourcesJar)
             }
         }
     }
 
     repositories {
-         mavenLocal()
+        mavenLocal()
     }
 }

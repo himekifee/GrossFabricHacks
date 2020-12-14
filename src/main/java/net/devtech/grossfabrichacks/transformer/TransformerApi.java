@@ -30,7 +30,6 @@ public class TransformerApi {
 	public static void registerPreMixinRawClassTransformer(RawClassTransformer transformer) {
 		if (GrossFabricHacks.Common.preMixinRawClassTransformer == null) {
 			GrossFabricHacks.Common.preMixinRawClassTransformer = transformer;
-			GrossFabricHacks.Common.transformPreMixinRawClass = true;
 		} else {
 			GrossFabricHacks.Common.preMixinRawClassTransformer = GrossFabricHacks.Common.preMixinRawClassTransformer.andThen(transformer);
 		}
@@ -42,7 +41,6 @@ public class TransformerApi {
 	public static void registerPreMixinAsmClassTransformer(AsmClassTransformer transformer) {
 		if (GrossFabricHacks.Common.preMixinAsmClassTransformer == null) {
 			GrossFabricHacks.Common.preMixinAsmClassTransformer = transformer;
-			GrossFabricHacks.Common.transformPreMixinAsmClass = true;
 			GrossFabricHacks.Common.shouldWrite = true;
 		} else {
 			GrossFabricHacks.Common.preMixinAsmClassTransformer = GrossFabricHacks.Common.preMixinAsmClassTransformer.andThen(transformer);
@@ -55,7 +53,6 @@ public class TransformerApi {
 	public static void registerPostMixinRawClassTransformer(RawClassTransformer transformer) {
 		if (GrossFabricHacks.Common.postMixinRawClassTransformer == null) {
 			GrossFabricHacks.Common.postMixinRawClassTransformer = transformer;
-			GrossFabricHacks.Common.transformPostMixinRawClass = true;
 			GrossFabricHacks.Common.shouldWrite = true;
 		} else {
 			GrossFabricHacks.Common.postMixinRawClassTransformer = GrossFabricHacks.Common.postMixinRawClassTransformer.andThen(transformer);
@@ -68,7 +65,6 @@ public class TransformerApi {
 	public static void registerPostMixinAsmClassTransformer(AsmClassTransformer transformer) {
 		if (GrossFabricHacks.Common.postMixinAsmClassTransformer == null) {
 			GrossFabricHacks.Common.postMixinAsmClassTransformer = transformer;
-			GrossFabricHacks.Common.transformPostMixinAsmClass = true;
 			GrossFabricHacks.Common.shouldWrite = true;
 		} else {
 			GrossFabricHacks.Common.postMixinAsmClassTransformer = GrossFabricHacks.Common.postMixinAsmClassTransformer.andThen(transformer);
