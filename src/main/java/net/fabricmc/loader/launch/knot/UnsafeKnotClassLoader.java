@@ -1,69 +1,54 @@
 package net.fabricmc.loader.launch.knot;
 
+import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import java.net.URLClassLoader;
-
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import java.util.Map;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
+import net.devtech.grossfabrichacks.loader.GrossClassLoader;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.game.GameProvider;
+import net.gudenau.lib.unsafe.Unsafe;
 import user11681.reflect.Classes;
 import user11681.reflect.Reflect;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.game.GameProvider;
-
 @SuppressWarnings("JavadocReference")
-public class UnsafeKnotClassLoader extends KnotClassLoader {
+public class UnsafeKnotClassLoader extends KnotClassLoader implements GrossClassLoader {
     /**
      * {@linkplain net.fabricmc.loader.launch.server.InjectingURLClassLoader InjectingURLClassLoader} in production servers; {@linkplain ClassLoader#getSystemClassLoader system class loader} everywhere else
      */
-    public static final ClassLoader preKnotClassLoader = KnotClassLoader.class.getClassLoader();
-    public static final UnsafeKnotClassLoader instance;
-    public static final URLClassLoader parent;
-    public static final ClassLoader dummyClassLoader;
-    public static final GrossKnotClassDelegate delegate;
+    private static final ClassLoader preKnotClassLoader = KnotClassLoader.class.getClassLoader();
+    private static final URLClassLoader parent;
+    private static final GrossKnotClassDelegate delegate;
 
-    public static final Reference2ReferenceOpenHashMap<String, Class<?>> overridingClasses = new Reference2ReferenceOpenHashMap<>();
+    public static final Object2ReferenceOpenHashMap<String, Class<?>> overridingClasses = new Object2ReferenceOpenHashMap<>();
 
     public UnsafeKnotClassLoader(final boolean isDevelopment, final EnvType envType, final GameProvider provider) {
         super(isDevelopment, envType, provider);
     }
 
-    public static void override(final Class<?> klass) {
-        overridingClasses.put(klass.getName().intern(), klass);
+    @Override
+    public ClassLoader getOriginalLoader() {
+        return preKnotClassLoader;
     }
 
-    public static void override(final String name) {
-        try {
-            overridingClasses.put(name.intern(), preKnotClassLoader.loadClass(name));
-        } catch (final ClassNotFoundException exception) {
-            throw GrossFabricHacks.Common.crash(exception);
-        }
-    }
-
-    public static void override(final ClassLoader classLoader, final String name) {
-        try {
-            overridingClasses.put(name.intern(), classLoader.loadClass(name));
-        } catch (final ClassNotFoundException exception) {
-            throw GrossFabricHacks.Common.crash(exception);
-        }
-    }
-
-    public Class<?> getLoadedClass(final String name) {
+    @Override
+    public Class<?> getLoadedClass(String name) {
         return super.findLoadedClass(name);
     }
 
     @Override
-    public boolean isClassLoaded(final String name) {
+    public boolean isClassLoaded(String name) {
         synchronized (super.getClassLoadingLock(name)) {
             return super.findLoadedClass(name) != null || Classes.findLoadedClass(preKnotClassLoader, name) != null;
         }
     }
 
     @Override
-    public Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
+    public Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         synchronized (super.getClassLoadingLock(name)) {
             Class<?> klass;
 
-            if ((klass = overridingClasses.get(name.intern())) == null && (klass = super.findLoadedClass(name)) == null) {
+            if ((klass = overridingClasses.get(name)) == null && (klass = super.findLoadedClass(name)) == null) {
                 if (name.startsWith("com.google.gson.")) {
                     klass = preKnotClassLoader.loadClass(name);
                 } else {
@@ -95,19 +80,25 @@ public class UnsafeKnotClassLoader extends KnotClassLoader {
         }
     }
 
+    @Override
+    public Map<String, Class<?>> getOverridingClasses() {
+        return overridingClasses;
+    }
+
     static {
+        Reflect.defaultClassLoader = Thread.currentThread().getContextClassLoader();
+        parent = (URLClassLoader) Reflect.defaultClassLoader.getParent();
+        delegate = Classes.staticCast(((KnotClassLoader) Reflect.defaultClassLoader).getDelegate(), GrossKnotClassDelegate.class);
+        GrossFabricHacks.Common.classLoader = Classes.staticCast(Reflect.defaultClassLoader, UnsafeKnotClassLoader.class);
+
         for (final String klass : System.clearProperty(GrossFabricHacks.Common.CLASS_PROPERTY).split(GrossFabricHacks.Common.CLASS_DELIMITER)) {
-            override(klass);
+            GrossFabricHacks.Common.classLoader.override((ClassLoader) GrossFabricHacks.Common.classLoader, klass);
         }
 
-        Reflect.defaultClassLoader = Thread.currentThread().getContextClassLoader();
-
-        parent = (URLClassLoader) Reflect.defaultClassLoader.getParent();
-        dummyClassLoader = parent.getParent();
-
-        Classes.addURL(ClassLoader.getSystemClassLoader(), UnsafeKnotClassLoader.class.getProtectionDomain().getCodeSource().getLocation());
-
-        delegate = Classes.staticCast(((KnotClassLoader) Reflect.defaultClassLoader).getDelegate(), GrossKnotClassDelegate.class);
-        instance = Classes.staticCast(Reflect.defaultClassLoader, UnsafeKnotClassLoader.class);
+        try {
+            Class.forName("net.bytebuddy.agent.Installer");
+        } catch (ClassNotFoundException exception) {
+            throw Unsafe.throwException(exception);
+        }
     }
 }

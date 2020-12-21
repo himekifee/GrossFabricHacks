@@ -10,8 +10,6 @@ public class Main {
     public static final String NAME = "net.devtech.grossfabrichacks.relaunch.Main";
 
     public static void main(final String[] args) throws Throwable {
-        System.setProperty(Relauncher.RELAUNCHED_PROPERTY, "true");
-
         final String entrypoints = System.clearProperty(Relauncher.ENTRYPOINT_PROPERTY);
 
         if (entrypoints != null) {

@@ -1,28 +1,21 @@
 package net.devtech.grossfabrichacks.instrumentation;
 
-import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
-import java.lang.management.ManagementFactory;
 import java.util.HashSet;
 import java.util.Set;
-
 import net.bytebuddy.agent.ByteBuddyAgent;
-import net.bytebuddy.agent.Installer;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
-import user11681.reflect.Accessor;
 import user11681.reflect.Classes;
-
-import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 
 public class InstrumentationApi {
     private static final Set<String> transformable = new HashSet<>();
 
-    public static final Instrumentation instrumentation;
+    public static final Instrumentation instrumentation = ByteBuddyAgent.install();
 
     /**
      * adds a transformer that pipes a class through TransformerBootstrap,
@@ -153,16 +146,5 @@ public class InstrumentationApi {
             // pipe transformer to
             TransformerApi.manualLoad();
         }
-    }
-
-    static {
-        if (!UnsafeKnotClassLoader.instance.isClassLoaded("net.bytebuddy.agent.Installer") || Accessor.getObject(Installer.class, "instrumentation") == null) {
-            final File agent = GrossFabricHacks.Common.getAgent();
-            final String processName = ManagementFactory.getRuntimeMXBean().getName();
-
-            ByteBuddyAgent.attach(agent, processName.substring(0, processName.indexOf('@')));
-        }
-
-        instrumentation = Installer.getInstrumentation();
     }
 }

@@ -1,8 +1,6 @@
 package org.spongepowered.asm.mixin.transformer;
 
 import net.devtech.grossfabrichacks.GrossFabricHacks;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.transformer.ext.Extensions;
@@ -13,8 +11,6 @@ public class HackedMixinTransformer extends MixinTransformer {
     public static final HackedMixinTransformer instance;
     public static final MixinProcessor processor;
     public static final Extensions extensions;
-
-    private static final Logger LOGGER = LogManager.getLogger("GrossFabricHacks/HackedMixinTransformer");
 
     @Override
     public byte[] transformClass(final MixinEnvironment environment, final String name, byte[] classBytes) {

@@ -1,34 +1,27 @@
 package net.devtech.grossfabrichacks;
 
-import java.io.File;
-import java.util.function.Consumer;
-
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
-import net.bytebuddy.agent.Installer;
+import java.util.function.Consumer;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
 import net.devtech.grossfabrichacks.entrypoints.RelaunchEntrypoint;
+import net.devtech.grossfabrichacks.loader.GrossClassLoader;
+import net.devtech.grossfabrichacks.loader.URLAdder;
 import net.devtech.grossfabrichacks.relaunch.Main;
 import net.devtech.grossfabrichacks.relaunch.Relauncher;
 import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import net.devtech.grossfabrichacks.unsafe.UnsafeUtil;
-import net.gudenau.lib.unsafe.Unsafe;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import user11681.dynamicentry.DynamicEntry;
-
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.gui.FabricGuiEntry;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
+import net.gudenau.lib.unsafe.Unsafe;
+import org.apache.logging.log4j.LogManager;
+import user11681.dynamicentry.DynamicEntry;
 
-@SuppressWarnings("ConstantConditions")
 public class GrossFabricHacks implements LanguageAdapter {
-    private static final Logger logger = LogManager.getLogger("GrossFabricHacks");
-
     @Override
     public native <T> T create(ModContainer mod, String value, Class<T> type);
 
@@ -36,29 +29,29 @@ public class GrossFabricHacks implements LanguageAdapter {
      * This class is intended to be loaded by the class loader that loaded {@linkplain net.fabricmc.loader.launch.knot.KnotClassLoader KnotClassLoader}<br>
      * so that classes loaded by different class loaders may share information.<br>
      * It may also be used for storing constants.<br>
-     * It should be safe to load from {@link UnsafeKnotClassLoader#preKnotClassLoader} and {@linkplain net.fabricmc.loader.launch.knot.KnotClassLoader KnotClassLoader}.
+     * It should be safe to load from {@linkplain GrossClassLoader#getOriginalLoader() the original class loader} and {@linkplain net.fabricmc.loader.launch.knot.KnotClassLoader KnotClassLoader}.
      */
     @SuppressWarnings("JavadocReference")
     public static class Common {
         /**
          * the system property used temporarily for transferring information about<br>
-         * the classes that have to be checked in {@linkplain UnsafeKnotClassLoader#preKnotClassLoader} first
+         * the classes that have to be checked in {@linkplain GrossClassLoader#getOriginalLoader() the original class loader} first
          */
         public static final String CLASS_PROPERTY = "gfh.common.classes";
         public static final String CLASS_DELIMITER = ",";
 
+        public static final ClassLoader targetClassLoader = FabricLauncherBase.getLauncher().getTargetClassLoader();
+
+        public static GrossClassLoader classLoader;
+
         public static boolean mixinLoaded;
         public static boolean shouldHackMixin;
-
         public static boolean shouldWrite;
+
         public static RawClassTransformer preMixinRawClassTransformer;
         public static RawClassTransformer postMixinRawClassTransformer;
         public static AsmClassTransformer preMixinAsmClassTransformer;
         public static AsmClassTransformer postMixinAsmClassTransformer;
-
-        public static File getAgent() {
-            return new File(Installer.class.getProtectionDomain().getCodeSource().getLocation().getFile());
-        }
 
         public static String getMainClass() {
             return FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT
@@ -66,27 +59,28 @@ public class GrossFabricHacks implements LanguageAdapter {
                 : "net.fabricmc.loader.launch.knot.KnotServer";
         }
 
-        public static RuntimeException crash(final Throwable throwable) {
-            FabricGuiEntry.displayCriticalError(new RuntimeException("GrossFabricHacks encountered an error. Report it along with a log to https://github.com/user11681/GrossFabricHacks/issues", throwable), true);
+        public static RuntimeException crash(Throwable throwable) {
+            FabricGuiEntry.displayCriticalError(new RuntimeException("GrossFabricHacks encountered an error. Report it along with a log to https://github.com/GrossFabricHackers/GrossFabricHacks/issues", throwable), true);
 
             return new RuntimeException(throwable);
         }
+
     }
 
     static {
-        logger.info("no good? no, this man is definitely up to evil.");
+        LogManager.getLogger("GrossFabricHacks").info("no good? no, this man is definitely up to evil.");
 
         if (!Relauncher.relaunched()) {
-            final ReferenceArrayList<RelaunchEntrypoint> entrypoints = new ReferenceArrayList<>(0);
-            final Consumer<RelaunchEntrypoint> handler = entrypoints::add;
+            ReferenceArrayList<RelaunchEntrypoint> entrypoints = new ReferenceArrayList<>();
+            Consumer<RelaunchEntrypoint> handler = entrypoints::add;
 
             DynamicEntry.execute("gfh:prePrePrePreLaunch", RelaunchEntrypoint.class, handler);
             DynamicEntry.execute("gfh:relaunch", RelaunchEntrypoint.class, handler);
 
-            final StringBuilder entrypointNames = new StringBuilder();
+            StringBuilder entrypointNames = new StringBuilder();
             boolean relaunch = false;
 
-            for (final RelaunchEntrypoint entrypoint : entrypoints) {
+            for (RelaunchEntrypoint entrypoint : entrypoints) {
                 if (entrypoint.shouldRelaunch()) {
                     relaunch = true;
                 }
@@ -103,7 +97,7 @@ public class GrossFabricHacks implements LanguageAdapter {
             }
         }
 
-        final String[] primaryClasses = new String[]{
+        String[] primaryClasses = new String[]{
             "net.gudenau.lib.unsafe.Unsafe",
             "user11681.reflect.Accessor",
             "user11681.reflect.Classes",
@@ -116,16 +110,20 @@ public class GrossFabricHacks implements LanguageAdapter {
             "net.devtech.grossfabrichacks.transformer.TransformerApi",
             "net.devtech.grossfabrichacks.instrumentation.AsmInstrumentationTransformer",
             "net.devtech.grossfabrichacks.instrumentation.InstrumentationApi",
-            "net.devtech.grossfabrichacks.GrossFabricHacks$Common"
+            "net.devtech.grossfabrichacks.GrossFabricHacks$Common",
+            "net.devtech.grossfabrichacks.loader.URLAdder",
+            "net.devtech.grossfabrichacks.loader.GrossClassLoader"
         };
 
         System.setProperty(Common.CLASS_PROPERTY, String.join(Common.CLASS_DELIMITER, primaryClasses));
 
-        final ClassLoader preKnotClassLoader = GrossFabricHacks.class.getClassLoader().getClass().getClassLoader();
+        ClassLoader preKnotClassLoader = GrossFabricHacks.class.getClassLoader().getClass().getClassLoader();
 
         for (int i = FabricLauncherBase.getLauncher().isDevelopment() ? 6 : 0, length = primaryClasses.length; i < length; i++) {
             UnsafeUtil.findClass(primaryClasses[i], preKnotClassLoader);
         }
+
+        URLAdder.addURL(ClassLoader.getSystemClassLoader(), GrossFabricHacks.class.getProtectionDomain().getCodeSource().getLocation());
 
         Unsafe.ensureClassInitialized(UnsafeUtil.findClass("net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader", preKnotClassLoader));
 

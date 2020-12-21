@@ -6,14 +6,15 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.security.AccessControlContext;
 import java.security.SecureClassLoader;
 import java.util.Locale;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
+import net.devtech.grossfabrichacks.loader.URLAdder;
 import net.devtech.grossfabrichacks.relaunch.Relauncher;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.discovery.ModResolver;
-import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import user11681.reflect.Accessor;
@@ -42,7 +43,7 @@ public class ClassLoaderReloader {
 
         try {
             // close the in-memory file system to avoid later collision
-            ((Closeable) Accessor.getObject(ModResolver.class, "inMemoryFs")).close();
+            URLAdder.inMemoryFs.close();
 
             // look up the classloader hierarchy until we find Launcher$ExtClassLoader
             final String launcherClassName = Reflect.java9 ? "jdk.internal.loader.ClassLoaders" : "sun.misc.Launcher";
@@ -64,7 +65,7 @@ public class ClassLoaderReloader {
                 newExtClassLoader = (ClassLoader) Invoker.unreflect(extClassLoaderClass.getDeclaredMethod("getExtClassLoader")).invoke();
             }
 
-            final ReferenceArrayList<URL> URLs = ReferenceArrayList.wrap(UnsafeKnotClassLoader.parent.getURLs());
+            final ReferenceArrayList<URL> URLs = ReferenceArrayList.wrap(((URLClassLoader) ((ClassLoader) GrossFabricHacks.Common.classLoader).getParent()).getURLs());
 
             for (final String path : System.getProperty("java.class.path").split(File.pathSeparator)) {
                 URLs.add(new File(path).getCanonicalFile().toURI().toURL());

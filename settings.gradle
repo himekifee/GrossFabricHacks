@@ -3,12 +3,10 @@ pluginManagement {
         jcenter()
         gradlePluginPortal()
 
-        maven {
-            url = 'https://maven.fabricmc.net/'
-        }
+        maven {url = "https://maven.fabricmc.net/"}
     }
 }
 
 rootProject.name = "grossfabrichacks"
 
-include("testmod")
+include(":testmod")

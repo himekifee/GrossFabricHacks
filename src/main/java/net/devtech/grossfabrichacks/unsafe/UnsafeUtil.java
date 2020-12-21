@@ -2,7 +2,6 @@ package net.devtech.grossfabrichacks.unsafe;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import net.gudenau.lib.unsafe.Unsafe;
 import user11681.reflect.Classes;
@@ -10,6 +9,7 @@ import user11681.reflect.Classes;
 /**
  * works across all normal JVMs I think
  */
+@SuppressWarnings("unchecked")
 public class UnsafeUtil {
     public static final FabricLauncherBase launcher = (FabricLauncherBase) FabricLauncherBase.getLauncher();
 
@@ -153,28 +153,28 @@ public class UnsafeUtil {
         return Unsafe.getInt(type, CLASS_KLASS_OFFSET);
     }
 
-    public static long addressOf(final Object object) {
+    public static long addressOf(Object object) {
         return addressOf(0, object);
     }
 
-    public static long addressOf(final int index, final Object... objects) {
+    public static long addressOf(int index, Object... objects) {
         final long offset = Unsafe.arrayBaseOffset(objects.getClass());
         final long scale = Unsafe.arrayIndexScale(objects.getClass());
 
         return (Unsafe.getInt(objects, offset + index * scale) & 0xFFFFFFFFL) * Classes.addressFactor;
     }
 
-    public static <T> Class<T> findClass(final String binaryName, final ClassLoader loader) {
+    public static <T> Class<T> findClass(String binaryName, ClassLoader loader) {
         try {
             try {
                 return (Class<T>) loader.loadClass(binaryName);
-            } catch (final ClassNotFoundException exception) {
+            } catch (ClassNotFoundException exception) {
                 final byte[] bytecode = launcher.getClassByteArray(binaryName, false);
 
                 return Unsafe.defineClass(binaryName, bytecode, 0, bytecode.length, loader, UnsafeUtil.class.getProtectionDomain());
             }
-        } catch (final IOException exception) {
-            throw GrossFabricHacks.Common.crash(exception);
+        } catch (IOException exception) {
+            throw Unsafe.throwException(exception);
         }
     }
 
