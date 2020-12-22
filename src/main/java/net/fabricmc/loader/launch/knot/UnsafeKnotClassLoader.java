@@ -7,7 +7,6 @@ import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.loader.GrossClassLoader;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.game.GameProvider;
-import net.gudenau.lib.unsafe.Unsafe;
 import user11681.reflect.Classes;
 import user11681.reflect.Reflect;
 
@@ -22,7 +21,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoader implements GrossClass
 
     public static final Object2ReferenceOpenHashMap<String, Class<?>> overridingClasses = new Object2ReferenceOpenHashMap<>();
 
-    public UnsafeKnotClassLoader(final boolean isDevelopment, final EnvType envType, final GameProvider provider) {
+    public UnsafeKnotClassLoader(boolean isDevelopment, EnvType envType, GameProvider provider) {
         super(isDevelopment, envType, provider);
     }
 
@@ -93,12 +92,6 @@ public class UnsafeKnotClassLoader extends KnotClassLoader implements GrossClass
 
         for (final String klass : System.clearProperty(GrossFabricHacks.Common.CLASS_PROPERTY).split(GrossFabricHacks.Common.CLASS_DELIMITER)) {
             GrossFabricHacks.Common.classLoader.override((ClassLoader) GrossFabricHacks.Common.classLoader, klass);
-        }
-
-        try {
-            Class.forName("net.bytebuddy.agent.Installer");
-        } catch (ClassNotFoundException exception) {
-            throw Unsafe.throwException(exception);
         }
     }
 }

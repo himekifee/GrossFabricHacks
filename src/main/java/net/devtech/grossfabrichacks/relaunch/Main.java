@@ -9,8 +9,8 @@ import org.jetbrains.annotations.ApiStatus.Experimental;
 public class Main {
     public static final String NAME = "net.devtech.grossfabrichacks.relaunch.Main";
 
-    public static void main(final String[] args) throws Throwable {
-        final String entrypoints = System.clearProperty(Relauncher.ENTRYPOINT_PROPERTY);
+    public static void main(String[] args) throws Throwable {
+        String entrypoints = System.clearProperty(Relauncher.ENTRYPOINT_PROPERTY);
 
         if (entrypoints != null) {
             Class.forName("net.devtech.grossfabrichacks.entrypoints.RelaunchEntrypoint");

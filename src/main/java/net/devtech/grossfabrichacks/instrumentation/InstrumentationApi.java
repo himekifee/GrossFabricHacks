@@ -40,7 +40,7 @@ public class InstrumentationApi {
      *                    of the class to retransform
      * @param transformer the class transformer
      */
-    public static void retransform(final String cls, final AsmInstrumentationTransformer transformer) {
+    public static void retransform(String cls, AsmInstrumentationTransformer transformer) {
         retransform(Classes.load(cls), transformer);
     }
 
@@ -57,7 +57,7 @@ public class InstrumentationApi {
      *                    of the class to retransform
      * @param transformer the class transformer
      */
-    public static void retransform(final String cls, final RawClassTransformer transformer) {
+    public static void retransform(String cls, RawClassTransformer transformer) {
         retransform(Classes.load(cls), transformer);
     }
 
@@ -81,21 +81,21 @@ public class InstrumentationApi {
             instrumentation.addTransformer(fileTransformer, true);
             instrumentation.retransformClasses(cls);
             instrumentation.removeTransformer(fileTransformer);
-        } catch (final UnmodifiableClassException exception) {
+        } catch (UnmodifiableClassException exception) {
             throw GrossFabricHacks.Common.crash(exception);
         }
     }
 
-    public static ClassNode getNode(final Class<?> klass) {
-        final ClassNode node = new ClassNode();
+    public static ClassNode getNode(Class<?> klass) {
+        ClassNode node = new ClassNode();
 
         new ClassReader(getBytecode(klass)).accept(node, 0);
 
         return node;
     }
 
-    public static byte[] getBytecode(final Class<?> klass) {
-        final RetainingDummyTransformer transformer = new RetainingDummyTransformer(klass);
+    public static byte[] getBytecode(Class<?> klass) {
+        RetainingDummyTransformer transformer = new RetainingDummyTransformer(klass);
 
         instrumentation.addTransformer(transformer);
 

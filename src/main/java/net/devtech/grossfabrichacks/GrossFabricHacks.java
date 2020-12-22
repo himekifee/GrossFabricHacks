@@ -1,6 +1,7 @@
 package net.devtech.grossfabrichacks;
 
-import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import net.devtech.grossfabrichacks.entrypoints.PrePrePreLaunch;
 import net.devtech.grossfabrichacks.entrypoints.RelaunchEntrypoint;
@@ -18,6 +19,7 @@ import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.gui.FabricGuiEntry;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import net.gudenau.lib.unsafe.Unsafe;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.logging.log4j.LogManager;
 import user11681.dynamicentry.DynamicEntry;
 
@@ -62,7 +64,7 @@ public class GrossFabricHacks implements LanguageAdapter {
         public static RuntimeException crash(Throwable throwable) {
             FabricGuiEntry.displayCriticalError(new RuntimeException("GrossFabricHacks encountered an error. Report it along with a log to https://github.com/GrossFabricHackers/GrossFabricHacks/issues", throwable), true);
 
-            return new RuntimeException(throwable);
+            return Unsafe.throwException(throwable);
         }
 
     }
@@ -71,29 +73,22 @@ public class GrossFabricHacks implements LanguageAdapter {
         LogManager.getLogger("GrossFabricHacks").info("no good? no, this man is definitely up to evil.");
 
         if (!Relauncher.relaunched()) {
-            ReferenceArrayList<RelaunchEntrypoint> entrypoints = new ReferenceArrayList<>();
-            Consumer<RelaunchEntrypoint> handler = entrypoints::add;
+            MutableBoolean relaunch = new MutableBoolean();
+            List<String> entrypointNames = new ObjectArrayList<>();
+
+            Consumer<RelaunchEntrypoint> handler = (RelaunchEntrypoint entrypoint) -> {
+                entrypointNames.add(entrypoint.getClass().getName());
+
+                if (entrypoint.shouldRelaunch()) {
+                    relaunch.setTrue();
+                }
+            };
 
             DynamicEntry.execute("gfh:prePrePrePreLaunch", RelaunchEntrypoint.class, handler);
             DynamicEntry.execute("gfh:relaunch", RelaunchEntrypoint.class, handler);
 
-            StringBuilder entrypointNames = new StringBuilder();
-            boolean relaunch = false;
-
-            for (RelaunchEntrypoint entrypoint : entrypoints) {
-                if (entrypoint.shouldRelaunch()) {
-                    relaunch = true;
-                }
-
-                if (entrypointNames.length() != 0) {
-                    entrypointNames.append(Common.CLASS_DELIMITER);
-                }
-
-                entrypointNames.append(entrypoint.getClass().getName());
-            }
-
-            if (relaunch) {
-                new Relauncher().mainClass(Main.NAME).property(Relauncher.ENTRYPOINT_PROPERTY, entrypointNames.toString()).relaunch();
+            if (relaunch.booleanValue()) {
+                new Relauncher().mainClass(Main.NAME).property(Relauncher.ENTRYPOINT_PROPERTY, String.join(Common.CLASS_DELIMITER, entrypointNames)).relaunch();
             }
         }
 
@@ -104,6 +99,7 @@ public class GrossFabricHacks implements LanguageAdapter {
             "user11681.reflect.Fields",
             "user11681.reflect.Invoker",
             "user11681.reflect.Reflect",
+            "net.bytebuddy.agent.Installer",
             "net.devtech.grossfabrichacks.unsafe.UnsafeUtil",
             "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
             "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",

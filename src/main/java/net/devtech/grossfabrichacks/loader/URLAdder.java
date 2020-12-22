@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.fabricmc.loader.discovery.ModResolver;
-import net.gudenau.lib.unsafe.Unsafe;
 import user11681.reflect.Accessor;
 import user11681.reflect.Classes;
 
@@ -68,7 +67,7 @@ public class URLAdder {
                     }
                 }
             } catch (IOException exception) {
-                throw Unsafe.throwException(exception);
+                throw GrossFabricHacks.Common.crash(exception);
             }
         }
     }

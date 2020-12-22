@@ -21,6 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.ApiStatus.Experimental;
 import user11681.reflect.Classes;
 
+@SuppressWarnings("unused")
 @Experimental
 @VisibleForTesting
 public class Relauncher {
@@ -39,7 +40,7 @@ public class Relauncher {
     public final List<String> programArguments;
 
     public Relauncher() {
-        this.virtualMachineArguments = getVMArguments();
+        this.virtualMachineArguments = new ObjectArrayList<>(getVMArguments());
         this.virtualMachineArguments.removeIf((String argument) -> argument.startsWith("-agentlib:jdwp") || argument.startsWith("-javaagent"));
 
         this.virtualMachineArgument("javaagent:", Installer.class.getProtectionDomain().getCodeSource().getLocation().getFile())
@@ -59,13 +60,13 @@ public class Relauncher {
             mainArgs.add(0, GrossFabricHacks.Common.getMainClass());
 
             return mainArgs;
-        } catch (final ClassNotFoundException exception) {
+        } catch (ClassNotFoundException exception) {
             return ObjectArrayList.wrap(System.getProperty("sun.java.command").split(" "));
         }
     }
 
     public static List<String> getVMArguments() {
-        return new ObjectArrayList<>(ManagementFactory.getRuntimeMXBean().getInputArguments());
+        return ManagementFactory.getRuntimeMXBean().getInputArguments();
     }
     
     public static boolean relaunched() {
@@ -78,7 +79,7 @@ public class Relauncher {
         }
     }
 
-    public Relauncher mainClass(final String name) {
+    public Relauncher mainClass(String name) {
         if (name != null && !name.equals(this.programArguments.get(0))) {
             this.programArguments.add(0, name);
         }
@@ -86,46 +87,46 @@ public class Relauncher {
         return this;
     }
 
-    public Relauncher programArgument(final String argument) {
+    public Relauncher programArgument(String argument) {
         this.programArguments.add(argument);
 
         return this;
     }
 
-    public Relauncher programArgument(final int index, final String argument) {
+    public Relauncher programArgument(int index, String argument) {
         this.programArguments.add(index, argument);
 
         return this;
     }
 
-    public Relauncher property(final String name) {
+    public Relauncher property(String name) {
         return this.property(name, System.getProperty(name));
     }
 
-    public Relauncher property(final String name, final String value) {
+    public Relauncher property(String name, String value) {
         return this.virtualMachineArgument("D", String.format("%s=%s", name, value));
     }
 
-    public Relauncher virtualMachineArgument(final String argument) {
+    public Relauncher virtualMachineArgument(String argument) {
         this.virtualMachineArguments.add(argument);
 
         return this;
     }
 
-    public Relauncher virtualMachineArgument(final String option, final String argument) {
+    public Relauncher virtualMachineArgument(String option, String argument) {
         this.virtualMachineArguments.add('-' + option + argument);
 
         return this;
     }
 
     public void relaunch() {
-        // remove built-in Java libraries from the class path
         Set<String> newClassPath = new ObjectOpenHashSet<>();
 
         for (URL url : Classes.getURLs(ClassLoader.getSystemClassLoader())) {
             newClassPath.add(url.getFile());
         }
 
+        // remove built-in Java libraries from the class path
         for (String path : System.getProperty("java.class.path").split(File.pathSeparator)) {
             if (!path.startsWith(home)) {
                 newClassPath.add(path);
