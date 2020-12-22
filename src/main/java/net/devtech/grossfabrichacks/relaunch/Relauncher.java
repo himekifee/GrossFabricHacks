@@ -150,10 +150,10 @@ public class Relauncher {
 
             try {
                 System.exit(process.waitFor());
-            } catch (final InterruptedException exception) {
+            } catch (InterruptedException exception) {
                 process.destroy();
             }
-        } catch (final IOException exception) {
+        } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
     }

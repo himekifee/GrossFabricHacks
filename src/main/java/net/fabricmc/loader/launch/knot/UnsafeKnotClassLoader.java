@@ -90,7 +90,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoader implements GrossClass
         delegate = Classes.staticCast(((KnotClassLoader) Reflect.defaultClassLoader).getDelegate(), GrossKnotClassDelegate.class);
         GrossFabricHacks.Common.classLoader = Classes.staticCast(Reflect.defaultClassLoader, UnsafeKnotClassLoader.class);
 
-        for (final String klass : System.clearProperty(GrossFabricHacks.Common.CLASS_PROPERTY).split(GrossFabricHacks.Common.CLASS_DELIMITER)) {
+        for (String klass : System.clearProperty(GrossFabricHacks.Common.CLASS_PROPERTY).split(GrossFabricHacks.Common.CLASS_DELIMITER)) {
             GrossFabricHacks.Common.classLoader.override((ClassLoader) GrossFabricHacks.Common.classLoader, klass);
         }
     }

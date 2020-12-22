@@ -36,8 +36,8 @@ public class Debug {
         listR(file, 0);
     }
 
-    public static void listR(File file, final int level) {
-        final StringBuilder output = new StringBuilder();
+    public static void listR(File file, int level) {
+        StringBuilder output = new StringBuilder();
 
         for (int i = 0; i < level; i++) {
             output.append("    ");
@@ -56,7 +56,7 @@ public class Debug {
 
             LOGGER.warn(output);
 
-            for (final File feil : file.listFiles()) {
+            for (File feil : file.listFiles()) {
                 listR(feil, level + 1);
             }
         }

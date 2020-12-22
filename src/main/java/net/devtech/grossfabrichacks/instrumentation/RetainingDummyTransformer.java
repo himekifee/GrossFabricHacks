@@ -10,14 +10,14 @@ public class RetainingDummyTransformer implements CompatibilityClassFileTransfor
 
     private int retransformedClassCount;
 
-    public RetainingDummyTransformer(final Class<?>... classes) {
+    public RetainingDummyTransformer(Class<?>... classes) {
         this.classes = new ReferenceOpenHashSet<>(classes);
 
         this.bytecode = new byte[classes.length][];
     }
 
     @Override
-    public byte[] transform(final ClassLoader loader, final String className, final Class<?> classBeingRedefined, final ProtectionDomain protectionDomain, final byte[] classfileBuffer) {
+    public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
         if (this.classes.remove(classBeingRedefined)) {
             this.bytecode[this.retransformedClassCount++] = classfileBuffer;
         }

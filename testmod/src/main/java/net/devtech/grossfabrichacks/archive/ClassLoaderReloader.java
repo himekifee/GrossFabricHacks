@@ -46,9 +46,9 @@ public class ClassLoaderReloader {
             URLAdder.inMemoryFs.close();
 
             // look up the classloader hierarchy until we find Launcher$ExtClassLoader
-            final String launcherClassName = Reflect.java9 ? "jdk.internal.loader.ClassLoaders" : "sun.misc.Launcher";
-            final String appClassLoaderClassName = launcherClassName + "$AppClassLoader";
-            final Class<?> extClassLoaderClass = Class.forName(launcherClassName + (Reflect.java9 ? "$PlatformClassLoader" : "$ExtClassLoader"));
+            String launcherClassName = Reflect.java9 ? "jdk.internal.loader.ClassLoaders" : "sun.misc.Launcher";
+            String appClassLoaderClassName = launcherClassName + "$AppClassLoader";
+            Class<?> extClassLoaderClass = Class.forName(launcherClassName + (Reflect.java9 ? "$PlatformClassLoader" : "$ExtClassLoader"));
             ClassLoader extClassLoader = FabricLoader.class.getClassLoader();
 
             while (extClassLoader.getClass() != extClassLoaderClass) {
@@ -56,7 +56,7 @@ public class ClassLoaderReloader {
             }
 
             // Make new ExtClassLoader
-            final ClassLoader newExtClassLoader;
+            ClassLoader newExtClassLoader;
 
             if (Reflect.java9) {
                 ClassLoader bootLoader = (ClassLoader) Invoker.unreflect(Class.forName(launcherClassName), "bootLoader").invoke();
@@ -65,14 +65,14 @@ public class ClassLoaderReloader {
                 newExtClassLoader = (ClassLoader) Invoker.unreflect(extClassLoaderClass.getDeclaredMethod("getExtClassLoader")).invoke();
             }
 
-            final ReferenceArrayList<URL> URLs = ReferenceArrayList.wrap(((URLClassLoader) ((ClassLoader) GrossFabricHacks.Common.classLoader).getParent()).getURLs());
+            ReferenceArrayList<URL> URLs = ReferenceArrayList.wrap(((URLClassLoader) ((ClassLoader) GrossFabricHacks.Common.classLoader).getParent()).getURLs());
 
-            for (final String path : System.getProperty("java.class.path").split(File.pathSeparator)) {
+            for (String path : System.getProperty("java.class.path").split(File.pathSeparator)) {
                 URLs.add(new File(path).getCanonicalFile().toURI().toURL());
             }
 
             // Make new AppClassLoader
-            final SecureClassLoader newAppClassLoader;
+            SecureClassLoader newAppClassLoader;
 
             if (Reflect.java9) {
                 newAppClassLoader = (SecureClassLoader) Invoker.findConstructor(Class.forName(appClassLoaderClassName), extClassLoaderClass, Classes.URLClassPath).invoke(
@@ -83,7 +83,7 @@ public class ClassLoaderReloader {
                 newAppClassLoader = (SecureClassLoader) Invoker.findConstructor(Class.forName(appClassLoaderClassName), URL[].class, ClassLoader.class).invoke(URLs.toArray(new URL[0]), extClassLoader);
             }
 
-            final Field systemClassLoader = Fields.getField(ClassLoader.class, "scl");
+            Field systemClassLoader = Fields.getField(ClassLoader.class, "scl");
 
             if (systemClassLoader == null) {
                 Accessor.putObject(ClassLoader.class, "applicationClassLoader", newAppClassLoader);
@@ -92,7 +92,7 @@ public class ClassLoaderReloader {
             }
 
             return newAppClassLoader;
-        } catch (final Throwable throwable) {
+        } catch (Throwable throwable) {
             throw GrossFabricHacks.Common.crash(throwable);
         }
     }
@@ -101,12 +101,12 @@ public class ClassLoaderReloader {
         launchMain(getNewLoader());
     }
 
-    public static void launchMain(final ClassLoader newLoader) {
+    public static void launchMain(ClassLoader newLoader) {
         LogManager.shutdown();
 
         try {
             ((Closeable) (Accessor.getObject(ModResolver.class, "inMemoryFs"))).close();
-        } catch (final IOException exception) {
+        } catch (IOException exception) {
             throw GrossFabricHacks.Common.crash(exception);
         }
 
@@ -118,7 +118,7 @@ public class ClassLoaderReloader {
             Invoker.findStatic(newLoader.loadClass("net.devtech.grossfabrichacks.relaunch.Main"), "main", void.class, String[].class).invokeExact(FabricLoader.getInstance().getLaunchArguments(false));
 
             System.exit(0);
-        } catch (final Throwable throwable) {
+        } catch (Throwable throwable) {
             throw GrossFabricHacks.Common.crash(new RuntimeException("Reloading did not succeed.", throwable));
         }
     }

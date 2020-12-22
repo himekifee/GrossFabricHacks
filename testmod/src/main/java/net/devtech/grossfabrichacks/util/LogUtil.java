@@ -4,15 +4,15 @@ import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 
 public class LogUtil {
-    public static void logMeanTime(final TestInfo... tests) {
-        final DoubleArrayList times = new DoubleArrayList();
+    public static void logMeanTime(TestInfo... tests) {
+        DoubleArrayList times = new DoubleArrayList();
 
-        for (final TestInfo test : tests) {
+        for (TestInfo test : tests) {
             times.add(meanTime(test));
         }
 
         for (int i = 0, length = tests.length; i < length; i++) {
-            final TestInfo test = tests[i];
+            TestInfo test = tests[i];
 
             if (test.format == null) {
                 printfln(times.getDouble(i));
@@ -22,15 +22,15 @@ public class LogUtil {
         }
     }
 
-    public static void logTime(final TestInfo... tests) {
-        final DoubleArrayList times = new DoubleArrayList();
+    public static void logTime(TestInfo... tests) {
+        DoubleArrayList times = new DoubleArrayList();
 
-        for (final TestInfo test : tests) {
+        for (TestInfo test : tests) {
             times.add(time(test));
         }
 
         for (int i = 0, length = tests.length; i < length; i++) {
-            final TestInfo test = tests[i];
+            TestInfo test = tests[i];
 
             if (test.format == null) {
                 printfln(times.getDouble(i));
@@ -40,49 +40,49 @@ public class LogUtil {
         }
     }
 
-    public static void logTime(final int iterations, final ThrowingIntConsumer test) {
+    public static void logTime(int iterations, ThrowingIntConsumer test) {
         printfln(time(iterations, test));
     }
 
-    public static void logMeanTime(final int iterations, final ThrowingIntConsumer test) {
+    public static void logMeanTime(int iterations, ThrowingIntConsumer test) {
         printfln(meanTime(iterations, test));
     }
 
-    public static void logTime(final String format, final int iterations, final ThrowingIntConsumer test) {
+    public static void logTime(String format, int iterations, ThrowingIntConsumer test) {
         printfln(format, time(iterations, test));
     }
 
-    public static void logMeanTime(final String format, final int iterations, final ThrowingIntConsumer test) {
+    public static void logMeanTime(String format, int iterations, ThrowingIntConsumer test) {
         printfln(format, meanTime(iterations, test));
     }
 
-    public static double meanTime(final TestInfo test) {
+    public static double meanTime(TestInfo test) {
         return meanTime(test.iterations, test.test);
     }
 
-    public static double time(final TestInfo test) {
+    public static double time(TestInfo test) {
         return time(test.iterations, test.test);
     }
 
-    public static double meanTime(final int iterations, final ThrowingIntConsumer test) {
+    public static double meanTime(int iterations, ThrowingIntConsumer test) {
         return time(iterations, test) / iterations;
     }
 
-    public static double time(final int iterations, final ThrowingIntConsumer test) {
-        final long start = System.nanoTime();
+    public static double time(int iterations, ThrowingIntConsumer test) {
+        long start = System.nanoTime();
 
         try {
             for (int i = 0; i < iterations; i++) {
                 test.accept(i);
             }
-        } catch (final Throwable throwable) {
+        } catch (Throwable throwable) {
             throw GrossFabricHacks.Common.crash(throwable);
         }
 
         return (System.nanoTime() - start) / 1000000000D;
     }
 
-    public static void printfln(final Object format, final Object... arguments) {
+    public static void printfln(Object format, Object... arguments) {
         System.out.printf(format + "%n", arguments);
     }
 }

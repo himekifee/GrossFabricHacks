@@ -101,7 +101,7 @@ public class InstrumentationApi {
 
         try {
             instrumentation.retransformClasses(klass);
-        } catch (final UnmodifiableClassException exception) {
+        } catch (UnmodifiableClassException exception) {
             throw GrossFabricHacks.Common.crash(exception);
         }
 

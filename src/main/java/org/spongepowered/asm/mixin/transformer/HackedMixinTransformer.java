@@ -13,7 +13,7 @@ public class HackedMixinTransformer extends MixinTransformer {
     public static final Extensions extensions;
 
     @Override
-    public byte[] transformClass(final MixinEnvironment environment, final String name, byte[] classBytes) {
+    public byte[] transformClass(MixinEnvironment environment, String name, byte[] classBytes) {
         // raw class patching
         if (GrossFabricHacks.Common.preMixinRawClassTransformer != null) {
             classBytes = GrossFabricHacks.Common.preMixinRawClassTransformer.transform(name, classBytes);
@@ -24,7 +24,7 @@ public class HackedMixinTransformer extends MixinTransformer {
     }
 
     public byte[] transform(MixinEnvironment environment, ClassNode classNode, byte[] original) {
-        final String name = classNode.name;
+        String name = classNode.name;
 
         if (GrossFabricHacks.Common.shouldWrite) {
             if (GrossFabricHacks.Common.preMixinAsmClassTransformer != null) {
@@ -53,7 +53,7 @@ public class HackedMixinTransformer extends MixinTransformer {
     }
 
     static {
-        final MixinTransformer mixinTransformer = (MixinTransformer) MixinEnvironment.getCurrentEnvironment().getActiveTransformer();
+        MixinTransformer mixinTransformer = (MixinTransformer) MixinEnvironment.getCurrentEnvironment().getActiveTransformer();
 
         processor = Accessor.getObject(mixinTransformer, "processor");
         extensions = (Extensions) mixinTransformer.getExtensions();

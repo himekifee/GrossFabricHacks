@@ -16,20 +16,20 @@ import org.objectweb.asm.tree.VarInsnNode;
 import user11681.reflect.Classes;
 
 public class DelegatingClassLoader {
-    public static void hack(final ClassLoader preKnotClassLoader, final ClassLoader knotClassLoader) {
+    public static void hack(ClassLoader preKnotClassLoader, ClassLoader knotClassLoader) {
         try {
-            final String preKnotClassLoaderName = preKnotClassLoader.getClass().getName().replace('.', '/');
-            final String name = preKnotClassLoaderName.substring(0, Math.max(preKnotClassLoaderName.lastIndexOf('/'), preKnotClassLoaderName.indexOf('$')) + 1) + "DelegatingClassLoader";
-            final ClassNode hackedClassLoader = new ClassNode();
+            String preKnotClassLoaderName = preKnotClassLoader.getClass().getName().replace('.', '/');
+            String name = preKnotClassLoaderName.substring(0, Math.max(preKnotClassLoaderName.lastIndexOf('/'), preKnotClassLoaderName.indexOf('$')) + 1) + "DelegatingClassLoader";
+            ClassNode hackedClassLoader = new ClassNode();
             new ClassReader(preKnotClassLoaderName).accept(hackedClassLoader, 0);
 
-            final String commonName = "net/devtech/grossfabrichacks/GrossFabricHacks$Common";
-            final String knotClassLoaderName = knotClassLoader.getClass().getName().replace('.', '/');
-            final String superclassName = preKnotClassLoader.getClass().getSuperclass().getName().replace('.', '/');
-            final InsnList instructions = new InsnList();
+            String commonName = "net/devtech/grossfabrichacks/GrossFabricHacks$Common";
+            String knotClassLoaderName = knotClassLoader.getClass().getName().replace('.', '/');
+            String superclassName = preKnotClassLoader.getClass().getSuperclass().getName().replace('.', '/');
+            InsnList instructions = new InsnList();
             MethodNode loadClass = null;
 
-            for (final MethodNode method : hackedClassLoader.methods) {
+            for (MethodNode method : hackedClassLoader.methods) {
                 if (method.name.equals("loadClass") && method.desc.equals("(Ljava/lang/String;Z)Ljava/lang/Class;")) {
                     loadClass = method;
 
@@ -37,7 +37,7 @@ public class DelegatingClassLoader {
                 }
             }
 
-            final LabelNode fallback = new LabelNode();
+            LabelNode fallback = new LabelNode();
 
             instructions.add(new FieldInsnNode(Opcodes.GETSTATIC, commonName, "knotClassLoader", "L" + knotClassLoaderName + ";"));
             instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
@@ -61,11 +61,11 @@ public class DelegatingClassLoader {
                 loadClass.visitInsn(Opcodes.ARETURN);
             }
 
-            final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
             hackedClassLoader.accept(writer);
 
             Classes.staticCast(preKnotClassLoader, Classes.defineClass(knotClassLoader, preKnotClassLoaderName.replace('/', '.'), writer.toByteArray(), preKnotClassLoader.getClass().getProtectionDomain()));
-        } catch (final Throwable throwable) {
+        } catch (Throwable throwable) {
             throw GrossFabricHacks.Common.crash(throwable);
         }
     }

@@ -20,7 +20,7 @@ public class GrossKnotClassDelegate extends KnotClassDelegate {
     public byte[] getRawClassByteArray(String name) {
         try {
             return super.getRawClassByteArray(name, false);
-        } catch (final IOException exception) {
+        } catch (IOException exception) {
             throw GrossFabricHacks.Common.crash(exception);
         }
     }
