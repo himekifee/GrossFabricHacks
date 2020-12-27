@@ -9,35 +9,35 @@ import org.apache.logging.log4j.Logger;
 public class Debug {
     private static final Logger LOGGER = LogManager.getLogger("GrossFabricHacks/test");
 
-    public static void printFields(final Class<?> klass, final Object object) {
+    public static void printFields(Class<?> klass, Object object) {
         Arrays.stream(klass.getDeclaredFields()).forEach(field -> {
             try {
-                final Object value = field.get(object);
-                final String message = String.format("%s = %s", field, value != null && value.getClass().isArray() ? Arrays.deepToString((Object[]) value) : value);
+                Object value = field.get(object);
+                String message = String.format("%s = %s", field, value != null && value.getClass().isArray() ? Arrays.deepToString((Object[]) value) : value);
 
-                for (final String line : message.split("\n")) {
+                for (String line : message.split("\n")) {
                     LOGGER.info(line);
                 }
-            } catch (final IllegalAccessException exception) {
+            } catch (IllegalAccessException exception) {
                 System.exit(768);
             }
         });
     }
 
-    public static void listR(final URL resource) {
+    public static void listR(URL resource) {
         listR(resource.getFile());
     }
 
-    public static void listR(final String file) {
+    public static void listR(String file) {
         listR(new File(file));
     }
 
-    public static void listR(final File file) {
+    public static void listR(File file) {
         listR(file, 0);
     }
 
-    public static void listR(final File file, final int level) {
-        final StringBuilder output = new StringBuilder();
+    public static void listR(File file, int level) {
+        StringBuilder output = new StringBuilder();
 
         for (int i = 0; i < level; i++) {
             output.append("    ");
@@ -56,7 +56,7 @@ public class Debug {
 
             LOGGER.warn(output);
 
-            for (final File feil : file.listFiles()) {
+            for (File feil : file.listFiles()) {
                 listR(feil, level + 1);
             }
         }

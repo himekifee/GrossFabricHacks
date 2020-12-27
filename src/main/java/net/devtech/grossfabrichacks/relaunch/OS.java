@@ -17,18 +17,18 @@ public enum OS {
 
     public final String string;
     public final String executableExtension;
-    
-    OS(final String string) {
+
+    OS(String string) {
         this(string, "");
     }
 
-    OS(final String string, final String executableExtension) {
+    OS(String string, String executableExtension) {
         this.string = string;
         this.executableExtension = executableExtension;
     }
 
     static {
-        final String operatingSystemName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+        String operatingSystemName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
 
         operatingSystem = operatingSystemName.contains("linux") ? LINUX
             : operatingSystemName.contains("mac") ? MAC_OS

@@ -1,28 +1,21 @@
 package net.devtech.grossfabrichacks.instrumentation;
 
-import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
-import java.lang.management.ManagementFactory;
 import java.util.HashSet;
 import java.util.Set;
-
 import net.bytebuddy.agent.ByteBuddyAgent;
-import net.bytebuddy.agent.Installer;
 import net.devtech.grossfabrichacks.GrossFabricHacks;
 import net.devtech.grossfabrichacks.transformer.TransformerApi;
 import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
-import user11681.reflect.Accessor;
 import user11681.reflect.Classes;
-
-import net.fabricmc.loader.launch.knot.UnsafeKnotClassLoader;
 
 public class InstrumentationApi {
     private static final Set<String> transformable = new HashSet<>();
 
-    public static final Instrumentation instrumentation;
+    public static final Instrumentation instrumentation = ByteBuddyAgent.install();
 
     /**
      * adds a transformer that pipes a class through TransformerBootstrap,
@@ -47,7 +40,7 @@ public class InstrumentationApi {
      *                    of the class to retransform
      * @param transformer the class transformer
      */
-    public static void retransform(final String cls, final AsmInstrumentationTransformer transformer) {
+    public static void retransform(String cls, AsmInstrumentationTransformer transformer) {
         retransform(Classes.load(cls), transformer);
     }
 
@@ -64,7 +57,7 @@ public class InstrumentationApi {
      *                    of the class to retransform
      * @param transformer the class transformer
      */
-    public static void retransform(final String cls, final RawClassTransformer transformer) {
+    public static void retransform(String cls, RawClassTransformer transformer) {
         retransform(Classes.load(cls), transformer);
     }
 
@@ -88,27 +81,27 @@ public class InstrumentationApi {
             instrumentation.addTransformer(fileTransformer, true);
             instrumentation.retransformClasses(cls);
             instrumentation.removeTransformer(fileTransformer);
-        } catch (final UnmodifiableClassException exception) {
+        } catch (UnmodifiableClassException exception) {
             throw GrossFabricHacks.Common.crash(exception);
         }
     }
 
-    public static ClassNode getNode(final Class<?> klass) {
-        final ClassNode node = new ClassNode();
+    public static ClassNode getNode(Class<?> klass) {
+        ClassNode node = new ClassNode();
 
         new ClassReader(getBytecode(klass)).accept(node, 0);
 
         return node;
     }
 
-    public static byte[] getBytecode(final Class<?> klass) {
-        final RetainingDummyTransformer transformer = new RetainingDummyTransformer(klass);
+    public static byte[] getBytecode(Class<?> klass) {
+        RetainingDummyTransformer transformer = new RetainingDummyTransformer(klass);
 
         instrumentation.addTransformer(transformer);
 
         try {
             instrumentation.retransformClasses(klass);
-        } catch (final UnmodifiableClassException exception) {
+        } catch (UnmodifiableClassException exception) {
             throw GrossFabricHacks.Common.crash(exception);
         }
 
@@ -153,16 +146,5 @@ public class InstrumentationApi {
             // pipe transformer to
             TransformerApi.manualLoad();
         }
-    }
-
-    static {
-        if (!UnsafeKnotClassLoader.instance.isClassLoaded("net.bytebuddy.agent.Installer") || Accessor.getObject(Installer.class, "instrumentation") == null) {
-            final File agent = GrossFabricHacks.Common.getAgent();
-            final String processName = ManagementFactory.getRuntimeMXBean().getName();
-
-            ByteBuddyAgent.attach(agent, processName.substring(0, processName.indexOf('@')));
-        }
-
-        instrumentation = Installer.getInstrumentation();
     }
 }

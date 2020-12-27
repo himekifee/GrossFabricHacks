@@ -1,12 +1,14 @@
 plugins {
     id("java-library")
     id("maven-publish")
-    id("fabric-loom").version("0.5-SNAPSHOT")
+    id("fabric-loom").version("0.5-SNAPSHOT").apply(false)
 }
 
-project.group = project.mavenGroup
-project.archivesBaseName = project.baseName
-project.version = project.modVersion
+project.group = "net.devtech"
+project.version = "0.9.0"
+
+final String minecraftVersion = "20w51a"
+final String yarnBuild = "5"
 
 allprojects {
     plugins.apply("fabric-loom")
@@ -21,9 +23,9 @@ allprojects {
     }
 
     dependencies {
-        minecraft("com.mojang:minecraft:${project.minecraftVersion}")
-        mappings("net.fabricmc:yarn:${project.minecraftVersion}+build.${project.yarnBuild}:v2")
-        modImplementation("net.fabricmc:fabric-loader:${project.loaderVersion}")
+        minecraft("com.mojang:minecraft:${minecraftVersion}")
+        mappings("net.fabricmc:yarn:${minecraftVersion}+build.${yarnBuild}:v2")
+        modApi("net.fabricmc:fabric-loader:+")
 
         testImplementation("org.junit.jupiter:junit-jupiter:+")
 
@@ -41,24 +43,24 @@ allprojects {
 //    modApi("net.fabricmc.fabric-api:fabric-api:+")
     }
 
-    processResources {
-        inputs.property("version", project.version)
-
-        from(sourceSets.main.resources.srcDirs) {
-            include("fabric.mod.json")
-            expand("version": project.version)
-        }
-
-        from(sourceSets.main.resources.srcDirs) {
-            exclude("fabric.mod.json")
-        }
-    }
-
 // ensure that the encoding is set to UTF-8, no matter what the system default is
 // this fixes some edge cases with special characters not displaying correctly
 // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
     tasks.withType(JavaCompile) {
         options.encoding = "UTF-8"
+    }
+}
+
+processResources {
+    inputs.property("version", project.version)
+
+    from(sourceSets.main.resources.srcDirs) {
+        include("fabric.mod.json")
+        expand("version": project.version)
+    }
+
+    from(sourceSets.main.resources.srcDirs) {
+        exclude("fabric.mod.json")
     }
 }
 

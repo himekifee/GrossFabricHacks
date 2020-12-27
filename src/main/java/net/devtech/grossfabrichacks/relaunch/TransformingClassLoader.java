@@ -24,9 +24,7 @@ public class TransformingClassLoader extends URLClassLoader implements Transform
 
     public static final GrossKnotClassDelegate delegate = new GrossKnotClassDelegate(false, null, instance, null);
 
-    public static boolean knotLoaded;
-
-    public static void registerRawTransformer(final RawClassTransformer transformer) {
+    public static void registerRawTransformer(RawClassTransformer transformer) {
         if (rawTransformer == null) {
             rawTransformer = transformer;
         } else {
@@ -34,7 +32,7 @@ public class TransformingClassLoader extends URLClassLoader implements Transform
         }
     }
 
-    public static void registerAsmTransformer(final AsmClassTransformer transformer) {
+    public static void registerAsmTransformer(AsmClassTransformer transformer) {
         if (asmTransformer == null) {
             asmTransformer = transformer;
         } else {
@@ -42,12 +40,12 @@ public class TransformingClassLoader extends URLClassLoader implements Transform
         }
     }
 
-    public TransformingClassLoader(final ClassLoader parent) {
+    public TransformingClassLoader(ClassLoader parent) {
         super(new URL[0], parent);
     }
 
     @Override
-    public Class<?> loadClass(final String name, final boolean resolve) {
+    public Class<?> loadClass(String name, boolean resolve) {
         Class<?> klass = this.findLoadedClass(name);
 
         try {
@@ -68,10 +66,10 @@ public class TransformingClassLoader extends URLClassLoader implements Transform
 
                 klass = super.defineClass(name, raw, 0, raw.length);
             }
-        } catch (final Throwable throwable) {
+        } catch (Throwable throwable) {
             try {
                 klass = parent.loadClass(name);
-            } catch (final Throwable notFound) {
+            } catch (Throwable notFound) {
                 throw Unsafe.throwException(notFound);
             }
         }
@@ -89,21 +87,21 @@ public class TransformingClassLoader extends URLClassLoader implements Transform
     }
 
     @Override
-    public boolean isClassLoaded(final String name) {
+    public boolean isClassLoaded(String name) {
         try {
             return this.findLoadedClass(name) != null || ((Class<?>) findLoadedClass.invokeExact(name)) != null;
-        } catch (final Throwable throwable) {
+        } catch (Throwable throwable) {
             throw Unsafe.throwException(throwable);
         }
     }
 
     @Override
-    public void addURL(final URL url) {
+    public void addURL(URL url) {
         super.addURL(url);
     }
 
     @Override
-    public InputStream getResourceAsStream(final String filename, final boolean skipOriginalLoader) {
+    public InputStream getResourceAsStream(String filename, boolean skipOriginalLoader) {
         return super.getResourceAsStream(filename);
     }
 
@@ -112,7 +110,7 @@ public class TransformingClassLoader extends URLClassLoader implements Transform
 
         try {
             findLoadedClass = Unsafe.trustedLookup.bind(parent, "findLoadedClass", MethodType.methodType(Class.class, String.class));
-        } catch (final Throwable exception) {
+        } catch (Throwable exception) {
             throw Unsafe.throwException(exception);
         }
 

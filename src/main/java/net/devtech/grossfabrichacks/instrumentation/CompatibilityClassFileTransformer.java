@@ -9,5 +9,5 @@ import java.security.ProtectionDomain;
  */
 public interface CompatibilityClassFileTransformer extends ClassFileTransformer {
     @Override
-    byte[] transform(final ClassLoader loader, final String className, final Class<?> classBeingRedefined, final ProtectionDomain protectionDomain, final byte[] classfileBuffer);
+    byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer);
 }

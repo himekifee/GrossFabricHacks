@@ -9,15 +9,13 @@ import org.jetbrains.annotations.ApiStatus.Experimental;
 public class Main {
     public static final String NAME = "net.devtech.grossfabrichacks.relaunch.Main";
 
-    public static void main(final String[] args) throws Throwable {
-        System.setProperty(Relauncher.RELAUNCHED_PROPERTY, "true");
-
-        final String entrypoints = System.clearProperty(Relauncher.ENTRYPOINT_PROPERTY);
+    public static void main(String[] args) throws Throwable {
+        String entrypoints = System.clearProperty(Relauncher.ENTRYPOINT_PROPERTY);
 
         if (entrypoints != null) {
             Class.forName("net.devtech.grossfabrichacks.entrypoints.RelaunchEntrypoint");
 
-            for (final String entrypoint : entrypoints.split(GrossFabricHacks.Common.CLASS_DELIMITER)) {
+            for (String entrypoint : entrypoints.split(GrossFabricHacks.Common.CLASS_DELIMITER)) {
                 ((RelaunchEntrypoint) TransformingClassLoader.instance.loadClass(entrypoint).getDeclaredConstructor().newInstance()).onRelaunch();
             }
         }

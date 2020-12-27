@@ -7,10 +7,10 @@ https://github.com/Devan-Kerman/GrossFabricHacks/wiki
 
 ```groovy
 repositories {
-    maven {url = "https://dl.bintray.com/user11681/maven"}
+    maven {url = "https://raw.githubusercontent.com/GrossFabricHackers/maven/master"}
 }
 
 dependencies {
-    modApi(include("net.devtech:grossfabrichacks:7.4"))
+    modApi(include("net.devtech:grossfabrichacks:0.9.0"))
 }
 ```
