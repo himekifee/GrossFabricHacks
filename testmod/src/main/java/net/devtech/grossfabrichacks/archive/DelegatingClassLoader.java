@@ -64,7 +64,7 @@ public class DelegatingClassLoader {
             ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
             hackedClassLoader.accept(writer);
 
-            Classes.staticCast(preKnotClassLoader, Classes.defineClass(knotClassLoader, preKnotClassLoaderName.replace('/', '.'), writer.toByteArray(), preKnotClassLoader.getClass().getProtectionDomain()));
+            Classes.reinterpret(preKnotClassLoader, Classes.defineClass(knotClassLoader, preKnotClassLoaderName.replace('/', '.'), writer.toByteArray(), preKnotClassLoader.getClass().getProtectionDomain()));
         } catch (Throwable throwable) {
             throw GrossFabricHacks.Common.crash(throwable);
         }

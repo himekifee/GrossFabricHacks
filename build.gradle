@@ -1,43 +1,40 @@
 plugins {
-    id("java-library")
-    id("maven-publish")
-    id("fabric-loom").version("0.5-SNAPSHOT").apply(false)
+    id 'fabric-loom' version '0.8-SNAPSHOT'
+    id 'maven-publish'
 }
 
 project.group = "net.devtech"
-project.version = "0.9.0"
-
-final String minecraftVersion = "20w51a"
-final String yarnBuild = "5"
+project.version = "1.0.2"
 
 allprojects {
     plugins.apply("fabric-loom")
 
-    sourceCompatibility = 8
-    targetCompatibility = 8
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
 
     repositories {
         mavenLocal()
 
-        maven {url = "https://dl.bintray.com/user11681/maven"}
+        maven {url = "https://auoeke.jfrog.io/artifactory/maven"}
+        maven { url = "https://raw.githubusercontent.com/GrossFabricHackers/maven/master" }
     }
 
     dependencies {
-        minecraft("com.mojang:minecraft:${minecraftVersion}")
-        mappings("net.fabricmc:yarn:${minecraftVersion}+build.${yarnBuild}:v2")
-        modApi("net.fabricmc:fabric-loader:+")
+        minecraft "com.mojang:minecraft:${project.minecraft_version}"
+        mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+        modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
         testImplementation("org.junit.jupiter:junit-jupiter:+")
 
         // concern
         // extraLibs files("${System.getProperty('java.home')}/../lib/tools.jar")
 
-        modApi("user11681:narratoroff:+")
+        modApi("user11681:narrator-off:+")
         modApi("user11681:noauth:+")
 
         modApi(include("net.bytebuddy:byte-buddy-agent:+"))
         modApi(include("net.gudenau.lib:unsafe:+"))
-        modApi(include("user11681:dynamicentry:+"))
+        modApi(include("user11681:dynamic-entry:+"))
         modApi(include("user11681:reflect:+"))
 
 //    modApi("net.fabricmc.fabric-api:fabric-api:+")
@@ -52,15 +49,10 @@ allprojects {
 }
 
 processResources {
-    inputs.property("version", project.version)
+    inputs.property "version", project.version
 
-    from(sourceSets.main.resources.srcDirs) {
-        include("fabric.mod.json")
-        expand("version": project.version)
-    }
-
-    from(sourceSets.main.resources.srcDirs) {
-        exclude("fabric.mod.json")
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
     }
 }
 

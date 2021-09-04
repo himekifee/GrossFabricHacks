@@ -122,7 +122,7 @@ public class Relauncher {
     public void relaunch() {
         Set<String> newClassPath = new ObjectOpenHashSet<>();
 
-        for (URL url : Classes.getURLs(ClassLoader.getSystemClassLoader())) {
+        for (URL url : Classes.urls(ClassLoader.getSystemClassLoader())) {
             newClassPath.add(url.getFile());
         }
 

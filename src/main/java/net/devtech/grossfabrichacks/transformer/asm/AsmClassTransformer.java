@@ -8,25 +8,26 @@ import org.objectweb.asm.tree.ClassNode;
  * a transformer using the ASM node
  */
 public interface AsmClassTransformer extends RawClassTransformer {
-	void transform(ClassNode node);
+    /**
+     * @param node a {@link ClassNode} representing the class to transform.
+     * @return whether {@code node} was modified or not.
+     */
+    boolean transform(ClassNode node);
 
-	@Override
-	default byte[] transform(String name, byte[] data) {
-		final ClassNode node = new ClassNode();
-		new ClassReader(data).accept(node, 0);
+    @Override
+    default byte[] transform(String name, byte[] data) {
+        ClassNode node = new ClassNode();
+        new ClassReader(data).accept(node, 0);
 
-		this.transform(node);
+        this.transform(node);
 
-		final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-		node.accept(writer);
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+        node.accept(writer);
 
-		return writer.toByteArray();
-	}
+        return writer.toByteArray();
+    }
 
-	default AsmClassTransformer andThen(AsmClassTransformer fixer) {
-		return (node) -> {
-			this.transform(node);
-			fixer.transform(node);
-		};
-	}
+    default AsmClassTransformer andThen(AsmClassTransformer fixer) {
+        return node -> this.transform(node) | fixer.transform(node);
+    }
 }

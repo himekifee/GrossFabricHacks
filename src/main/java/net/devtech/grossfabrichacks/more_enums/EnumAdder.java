@@ -12,9 +12,9 @@ public class EnumAdder {
 	private static final Field CONSTRUCTOR_ACCESSOR;
 	private static final MethodHandle AQUIRE_CONSTRUCTOR_ACCESSOR;
 	static {
-		ENUM_CONSTANT_DIRECTORY = Fields.getRawField(Class.class, "enumConstantDirectory");
-		ENUM_CONSTANTS = Fields.getRawField(Class.class, "enumConstants");
-		CONSTRUCTOR_ACCESSOR = Fields.getRawField(Constructor.class, "constructorAccessor");
+		ENUM_CONSTANT_DIRECTORY = Fields.field(Class.class, "enumConstantDirectory");
+		ENUM_CONSTANTS = Fields.field(Class.class, "enumConstants");
+		CONSTRUCTOR_ACCESSOR = Fields.field(Constructor.class, "constructorAccessor");
 		AQUIRE_CONSTRUCTOR_ACCESSOR = Invoker.unreflect(Constructor.class, "acquireConstructorAccessor");
 	}
 

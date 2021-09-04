@@ -83,7 +83,7 @@ public class ClassLoaderReloader {
                 newAppClassLoader = (SecureClassLoader) Invoker.findConstructor(Class.forName(appClassLoaderClassName), URL[].class, ClassLoader.class).invoke(URLs.toArray(new URL[0]), extClassLoader);
             }
 
-            Field systemClassLoader = Fields.getField(ClassLoader.class, "scl");
+            Field systemClassLoader = Fields.field(ClassLoader.class, "scl");
 
             if (systemClassLoader == null) {
                 Accessor.putObject(ClassLoader.class, "applicationClassLoader", newAppClassLoader);

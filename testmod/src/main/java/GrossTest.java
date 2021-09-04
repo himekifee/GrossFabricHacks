@@ -19,7 +19,10 @@ public class GrossTest implements PrePrePreLaunch {
     }
 
     private static void transformerTest() {
-        TransformerApi.registerPostMixinAsmClassTransformer((ClassNode node) -> System.out.println(node.name));
+        TransformerApi.registerPostMixinAsmClassTransformer((ClassNode node) -> {
+            System.out.println(node.name);
+            return true;
+        });
     }
 
     private static void instrumentationTest() {

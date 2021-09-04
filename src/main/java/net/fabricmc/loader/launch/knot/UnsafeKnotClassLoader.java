@@ -1,33 +1,31 @@
 package net.fabricmc.loader.launch.knot;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
+
+import java.lang.invoke.MethodHandle;
 import java.net.URLClassLoader;
+import java.security.CodeSource;
 import java.util.Map;
-import net.devtech.grossfabrichacks.GrossFabricHacks;
+
 import net.devtech.grossfabrichacks.loader.GrossClassLoader;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.game.GameProvider;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import user11681.reflect.Classes;
-import user11681.reflect.Reflect;
+import user11681.reflect.Invoker;
 
-@SuppressWarnings("JavadocReference")
+@SuppressWarnings({"JavadocReference", "deprecation"})
 public class UnsafeKnotClassLoader extends KnotClassLoader implements GrossClassLoader {
     /**
      * {@linkplain net.fabricmc.loader.launch.server.InjectingURLClassLoader InjectingURLClassLoader} in production servers; {@linkplain ClassLoader#getSystemClassLoader system class loader} everywhere else
      */
     private static final ClassLoader preKnotClassLoader = KnotClassLoader.class.getClassLoader();
-    private static final URLClassLoader parent;
+    public static final URLClassLoader parent;
     private static final GrossKnotClassDelegate delegate;
-
-    public static final Object2ReferenceOpenHashMap<String, Class<?>> overridingClasses = new Object2ReferenceOpenHashMap<>();
+    private static final Object2ReferenceOpenHashMap<String, Class<?>> overridingClasses = new Object2ReferenceOpenHashMap<>();
 
     public UnsafeKnotClassLoader(boolean isDevelopment, EnvType envType, GameProvider provider) {
         super(isDevelopment, envType, provider);
-    }
-
-    @Override
-    public ClassLoader getOriginalLoader() {
-        return preKnotClassLoader;
     }
 
     @Override
@@ -51,7 +49,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoader implements GrossClass
                 if (name.startsWith("com.google.gson.")) {
                     klass = preKnotClassLoader.loadClass(name);
                 } else {
-                    final byte[] input = delegate.getPostMixinClassByteArray(name);
+                    byte[] input = delegate.getPostMixinClassByteArray(name);
 
                     if (input == null) {
                         klass = preKnotClassLoader.loadClass(name);
@@ -66,7 +64,15 @@ public class UnsafeKnotClassLoader extends KnotClassLoader implements GrossClass
                             }
                         }
 
-                        klass = super.defineClass(name, input, 0, input.length, delegate.getMetadata(name, parent.getResource(delegate.getClassFileName(name))).codeSource);
+                        klass = defineClass(name, input, 0, input.length, delegate.getMetadata(name, parent.getResource(delegate.getClassFileName(name))).codeSource);
+
+//                        MethodHandle defineCLass = Invoker.findVirtual(KnotClassLoader.class, "defineClass", Class.class, String.class, byte[].class, int.class, int.class, CodeSource.class);
+//                        try {
+//                            klass = (Class<?>) defineCLass.invokeExact( Classes.reinterpret(this,KnotClassLoader.class), name, input, 0, input.length, delegate.getMetadata(name, parent.getResource(delegate.getClassFileName(name))).codeSource);
+//                        } catch (Throwable e) {
+//                            e.printStackTrace();
+//                        }
+//                        klass = super.defineClass(name, input, 0, input.length, delegate.getMetadata(name, parent.getResource(delegate.getClassFileName(name))).codeSource);
                     }
                 }
             }
@@ -85,13 +91,9 @@ public class UnsafeKnotClassLoader extends KnotClassLoader implements GrossClass
     }
 
     static {
-        Reflect.defaultClassLoader = Thread.currentThread().getContextClassLoader();
-        parent = (URLClassLoader) Reflect.defaultClassLoader.getParent();
-        delegate = Classes.staticCast(((KnotClassLoader) Reflect.defaultClassLoader).getDelegate(), GrossKnotClassDelegate.class);
-        GrossFabricHacks.Common.classLoader = Classes.staticCast(Reflect.defaultClassLoader, UnsafeKnotClassLoader.class);
+        KnotClassLoader knotClassLoader = (KnotClassLoader) FabricLauncherBase.getLauncher().getTargetClassLoader();
 
-        for (String klass : System.clearProperty(GrossFabricHacks.Common.CLASS_PROPERTY).split(GrossFabricHacks.Common.CLASS_DELIMITER)) {
-            GrossFabricHacks.Common.classLoader.override((ClassLoader) GrossFabricHacks.Common.classLoader, klass);
-        }
+        parent = (URLClassLoader) knotClassLoader.getParent();
+        delegate = Classes.reinterpret(knotClassLoader.getDelegate(), GrossKnotClassDelegate.class);
     }
 }
